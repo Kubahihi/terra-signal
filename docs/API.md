@@ -8,9 +8,8 @@ data cleaning, units, aggregation, and statistical results.
 
 - `GET /health` and `GET /api/health`: service status, name, version.
 - `GET /docs`: interactive OpenAPI documentation.
-- `GET /api/series`: validates the request, then returns **501** until the NASA
-  provider is implemented. This is an explicit unfinished integration, not a
-  simulated scientific result.
+- `GET /api/series`: real monthly NASA data and exploratory trend analysis.
+  Returns 503 if neither NASA nor matching saved data can satisfy the request.
 
 Example request:
 
@@ -22,6 +21,8 @@ Example request:
 `start` and `end`: 1981 through the previous complete year, `start <= end`.
 These are project request limits; they do not guarantee that every NASA variable
 has complete coverage throughout the requested interval.
+Use `refresh=true` to bypass a fresh cache. A clearly labeled saved response may
+still be returned if NASA is unavailable.
 
 ## Successful response
 
@@ -34,16 +35,20 @@ has complete coverage throughout the requested interval.
 | `start`, `end` | Requested year range |
 | `series` | Ordered monthly `{date: "YYYY-MM-01", value: number or null}` records |
 | `warnings` | Human-readable data-quality and coverage limitations |
-| `analysis` | `null` until the statistical method is implemented and checked |
+| `analysis` | Exploratory seasonal OLS/HAC result, or null if data are inadequate |
+| `source_url` | Original public NASA request URL |
+| `retrieved_at` | UTC retrieval timestamp of the actual response used |
+| `data_origin` | `live`, `cache`, or `snapshot` |
 
-When implemented, `analysis` contains `method`, `slope_per_year`,
+`analysis` contains `method`, `slope_per_year`,
 `slope_per_decade`, `ci95_per_decade` (two bounds or null), and `p_value` (or null).
+It also reports `sample_size` and `hac_lags`.
 The confidence interval refers to **the slope per decade**, not individual
 observations or a forecast interval. Undefined statistics must be null, never NaN.
 
-## Matej: implement the NASA provider
+## NASA provider and next backend work
 
-Implement `fetch_monthly_series()` in `backend/app/services/nasa_power.py`:
+`fetch_monthly_series()` in `backend/app/services/nasa_power.py` now implements:
 
 1. Request `NASA_POWER_URL` from config, with the requested point, parameter,
    start/end years, community, and JSON format. Use a bounded timeout.
@@ -52,7 +57,12 @@ Implement `fetch_monthly_series()` in `backend/app/services/nasa_power.py`:
 4. Normalize missing/non-finite observations to null, preserve gaps, sort dates.
 5. Report actual coverage and distinguish a model grid cell from a weather station.
 6. Handle provider errors without returning fabricated data or exposing credentials.
-7. Return `analysis: null` until Terka has checked the implementation.
+7. Return source provenance and explicit cache/snapshot origin. The route then
+   estimates an exploratory trend using `services/analysis.py`.
+
+Matej: extend this entry point rather than creating a second provider. Next
+priorities are cache/rate-limit behavior under load and any additional locations
+or variables the team agrees to support. Coordinate statistical changes with Terka.
 
 Reference: https://power.larc.nasa.gov/docs/services/api/temporal/monthly/
 

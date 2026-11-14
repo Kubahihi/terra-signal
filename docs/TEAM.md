@@ -14,10 +14,10 @@ the response format. Use separate branches. Integrate small changes regularly.
 ## Milestones
 
 1. Backend health appears in the frontend; setup works for both programmers.
-2. Matej replaces the explicit 501 provider stub with a real NASA time series.
+2. Real NASA data are now connected for both preset points and variables.
 3. Jakub verifies the graph against those same observations.
-4. Terka and Matej select, implement, and independently check a trend method.
-5. Connect validated analysis results to the existing result cards.
+4. Terka and Matej independently review the exploratory seasonal OLS/HAC method.
+5. The result cards are connected; improve explanation and review sensitivity to the chosen period.
 6. Verify two reproducible real examples, coverage warnings, and source references.
 7. Deploy, check public access, complete the project description and demo.
 
@@ -31,6 +31,5 @@ the response format. Use separate branches. Integrate small changes regularly.
 - Record dataset versions, references, licenses, and AI assistance while working.
 - Verify the final site and demo links without a login before submission.
 
-The current scaffold has no database, account system, or implemented statistical
-test. Add them only if the agreed scope needs them. Do not present pending work
-as completed science.
+The current MVP has a file cache and an exploratory statistical model. Review
+model assumptions and lag sensitivity before making strong scientific claims.

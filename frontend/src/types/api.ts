@@ -15,6 +15,8 @@ export type TrendAnalysis = {
   slope_per_decade: number
   ci95_per_decade: [number, number] | null
   p_value: number | null
+  sample_size: number
+  hac_lags: number
 }
 export type SeriesResponse = {
   source: string
@@ -27,4 +29,7 @@ export type SeriesResponse = {
   series: Observation[]
   warnings: string[]
   analysis: TrendAnalysis | null
+  source_url: string
+  retrieved_at: string
+  data_origin: 'live' | 'cache' | 'snapshot'
 }

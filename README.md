@@ -8,9 +8,20 @@ NASA Space Apps Challenge 2026 — **Be An Earth System Trend Detective!**
 
 React + TypeScript frontend, FastAPI backend, validated API contract, local proxy,
 development tasks, and a container definition for a single-host deployment.
-The NASA data provider and statistical analysis are **not implemented yet**.
-`/api/series` reports this explicitly with HTTP 501. No observations or statistical
-results are fabricated.
+The first MVP loads real NASA POWER temperature and precipitation series, plots
+monthly observations, and estimates a seasonal linear trend with HAC uncertainty.
+Prague and Medicine Hat include attributed original NASA snapshots for outages.
+The interface reports source, retrieval date, data origin, units, and limitations.
+The statistics are exploratory and still need the team's scientific review.
+
+The light map workspace supports selecting any point by click, dragging the marker,
+or entering coordinates. Selecting a point, variable, or valid period updates the
+analysis automatically; obsolete browser requests are cancelled. The interactive
+chart offers monthly observations and day-weighted annual means (complete years
+only); both views retain the original monthly trend analysis. Hover or use arrow
+keys to inspect values. Download CSV exports include NASA source and retrieval
+metadata. The map uses Leaflet and attributed OpenStreetMap tiles; NASA remains
+the source of the environmental observations.
 
 ## Project layout
 
@@ -18,7 +29,9 @@ results are fabricated.
 | --- | --- |
 | `frontend/src/` | App, visual components, API client, and browser types |
 | `backend/app/routes/` | Validated HTTP endpoints |
-| `backend/app/services/` | NASA data provider and future analysis implementation |
+| `backend/app/services/` | NASA data, caching, normalization, seasonal trend analysis |
+| `backend/data/snapshots/` | Original NASA responses, request URLs, dates and checksums |
+| `backend/tests/` | Data normalization, outage fallback and known-trend checks |
 | `backend/app/schemas.py` | Shared response contract on the backend |
 | `docs/API.md` | API fields and NASA implementation checklist |
 | `docs/TEAM.md` | Ownership, milestones, and remaining connections |
@@ -45,7 +58,7 @@ also works without changing PowerShell's execution policy or activating a shell.
 In VS Code: **Terminal > Run Task > Dev: all**. Alternatively use two terminals:
 
 ```powershell
-.\.venv\Scripts\python.exe -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
+.\.venv\Scripts\python.exe -m uvicorn backend.app.main:app --reload --reload-dir backend --host 127.0.0.1 --port 8000
 ```
 
 ```powershell
@@ -71,6 +84,7 @@ Never put credentials in `VITE_` variables or commit `.env` files.
 ```powershell
 npm.cmd --prefix frontend run build
 .\.venv\Scripts\python.exe -m compileall -q backend
+.\.venv\Scripts\python.exe -m unittest discover -s backend/tests -v
 ```
 
 ## Deployment without a custom domain
@@ -85,5 +99,15 @@ the backend's exact `CORS_ORIGINS` as described in `docs/API.md`.
 
 ## Next step
 
-Follow `docs/TEAM.md`. Matej implements the NASA provider; Jakub owns the interface;
-Terka checks the calculations and scientific interpretation.
+Follow `docs/TEAM.md`. Jakub improves the interface, Matej owns backend reliability
+and extensions, and Terka independently reviews the model and interpretation.
+
+## Data and analysis
+
+No API key is needed for the implemented public NASA POWER calls. Live responses
+are cached locally for 24 hours; the interface can explicitly refresh them.
+On an outage, only a matching saved response is used and clearly labeled.
+The bundled snapshots cover both preset points, both variables, and 1981-2025.
+Annual summaries (NASA month 13) are excluded. Missing monthly observations remain
+null. Precipitation is a mean daily rate in mm/day, not a monthly rainfall total.
+See `docs/METHODOLOGY.md` for statistical assumptions and verification limits.

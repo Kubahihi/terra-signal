@@ -2,6 +2,7 @@
 
 from datetime import date
 from enum import StrEnum
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -34,6 +35,8 @@ class TrendAnalysis(BaseModel):
     slope_per_decade: float
     ci95_per_decade: tuple[float, float] | None = None
     p_value: float | None = Field(default=None, ge=0, le=1)
+    sample_size: int
+    hac_lags: int
 
 
 class SeriesResponse(BaseModel):
@@ -47,3 +50,6 @@ class SeriesResponse(BaseModel):
     series: list[Observation]
     warnings: list[str] = Field(default_factory=list)
     analysis: TrendAnalysis | None = None
+    source_url: str
+    retrieved_at: str
+    data_origin: Literal["live", "cache", "snapshot"]

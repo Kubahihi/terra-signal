@@ -19,7 +19,8 @@ async function request<T>(path: string, signal?: AbortSignal): Promise<T> {
 
 export const getHealth = (signal?: AbortSignal) => request<HealthResponse>('/api/health', signal)
 
-export function getSeries(query: SeriesQuery): Promise<SeriesResponse> {
+export function getSeries(query: SeriesQuery, refresh = false, signal?: AbortSignal): Promise<SeriesResponse> {
   const params = new URLSearchParams(Object.entries(query).map(([key, value]) => [key, String(value)]))
-  return request<SeriesResponse>(`/api/series?${params}`)
+  if (refresh) params.set('refresh', 'true')
+  return request<SeriesResponse>(`/api/series?${params}`, signal)
 }

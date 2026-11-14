@@ -1,0 +1,22 @@
+[
+  {
+    "file": "prague.json",
+    "latitude": 50.0755,
+    "longitude": 14.4378,
+    "start": 1981,
+    "end": 2025,
+    "source_url": "https://power.larc.nasa.gov/api/temporal/monthly/point?parameters=T2M%2CPRECTOTCORR&community=AG&longitude=14.4378&latitude=50.0755&start=1981&end=2025&format=JSON",
+    "retrieved_at": "2026-11-14T13:51:06.675Z",
+    "sha256": "f4b375c328f6f352c8dd3559052be8a64781c1cc98431bc891aa545530e30e7b"
+  },
+  {
+    "file": "medicine-hat.json",
+    "latitude": 50.0405,
+    "longitude": -110.6765,
+    "start": 1981,
+    "end": 2025,
+    "source_url": "https://power.larc.nasa.gov/api/temporal/monthly/point?parameters=T2M%2CPRECTOTCORR&community=AG&longitude=-110.6765&latitude=50.0405&start=1981&end=2025&format=JSON",
+    "retrieved_at": "2026-11-14T13:51:07.069Z",
+    "sha256": "672818fb77ef9579bd149e5b46e8f7588a47a289624ac54e1e646e2049eff972"
+  }
+]
