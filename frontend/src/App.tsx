@@ -4,6 +4,7 @@ import MapPicker from './components/MapPicker'
 import SeriesChart from './components/SeriesChart'
 import TrendEvidence from './components/TrendEvidence'
 import InvestigationStarter from './components/InvestigationStarter'
+import DailyExampleStarter from './components/DailyExampleStarter'
 import LocationComparison from './components/LocationComparison'
 import DataResources from './components/DataResources'
 import LocalQuestions from './components/LocalQuestions'
@@ -11,6 +12,7 @@ import DailyWeather from './components/DailyWeather'
 import { getHealth, getSeries } from './lib/api'
 import { coordinates, exampleLocations, locationAt, type Location } from './lib/locations'
 import { variableInfo, type Investigation } from './lib/investigations'
+import { exampleAnalysis, type DailyExample } from './lib/dailyExamples'
 import { seriesCsv } from './lib/csv'
 import type { CalendarSelection, DailySelection, SeriesResponse, Variable } from './types/api'
 
@@ -118,6 +120,24 @@ export default function App() {
     setComparisonEnabled(value => !value)
   }
 
+  function startDailyExample(example: DailyExample) {
+    pickLocation(example.location)
+    setComparisonLocation(example.comparison)
+    setStart(exampleAnalysis.start)
+    setEnd(exampleAnalysis.end)
+    setVariable('T2M')
+    setComparisonEnabled(true)
+    setMapTarget('b')
+    setInvestigation(null)
+    setCalendarSelection({ period: 'year', view: 'values' })
+    // A new selection also resets metric/year when reopening the same example.
+    setDailySelection({ metric: example.metric, autoLoad: true })
+    setActionMessage(`Example opened: ${example.title}, ${exampleAnalysis.start}–${exampleAnalysis.end}.`)
+    window.requestAnimationFrame(() => document.getElementById('daily-place-comparison')?.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start',
+    }))
+  }
+
   function chooseOnMap(point: 'a' | 'b') {
     setComparisonEnabled(true)
     setMapTarget(point)
@@ -152,6 +172,7 @@ export default function App() {
         <div className="source-status" role="status"><span className={`status-dot ${service}`} />{service === 'online' ? 'Analysis service online' : service === 'checking' ? 'Connecting to data' : 'Data service unavailable'}</div>
       </div>
 
+      <DailyExampleStarter onStart={startDailyExample} />
       <InvestigationStarter onStart={startInvestigation} />
 
       <div className="filter-bar" id="analysis-settings" aria-label="Analysis settings">

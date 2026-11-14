@@ -194,6 +194,21 @@ Implementation references: [statsmodels HAC inference](https://www.statsmodels.o
 
 ## Spatial comparison and guided investigations
 
+The one-click finding cards are references to the saved 2026-11-14 analysis of
+ten predefined points over 1981–2025. Their displayed rates retain the original
+complete annual observations and Holm adjustment across all 40 point/index
+tests, available in `frontend/public/data/daily-example-analysis-1981-2025.json`.
+The main card opens Brno/Athens hot-day counts. Other cards open Brno or Berlin
+frost counts and Athens or Sydney warm-night proxies. Each action resets both
+coordinates, the requested period, daily metric, highlighted year 2025 and
+comparison visibility, including when the same card is selected again.
+
+The cards are explicitly saved findings, while opening one fetches the selected
+daily record and recalculates its trends. The live charts retain four-test Holm
+correction per point, with their actual retrieval metadata and data-quality
+requirements. This distinction prevents treating the ten-location exploratory
+screen as the live chart's multiplicity family or as a test between locations.
+
 Daily comparison selects A and B by clicking or dragging labelled markers on the
 same map. Both points use the same requested interval, thresholds, day basis,
 metric and highlighted year. The two daily charts share vertical limits computed
