@@ -110,7 +110,7 @@ export default function LocalQuestions({ location, variable, start, end, validPe
         </div></details>
         <div className="calendar-footer"><span>{current ? `${originLabel(current.data_origin)} · retrieved ${new Date(current.retrieved_at).toLocaleString()}` : 'Loading source details…'}</span><div><button type="button" className="secondary-button" disabled={!current || !period} onClick={download}>Download this view <Icon name="download" /></button><button type="button" className="icon-button" disabled={loading} aria-label="Refresh local investigation from NASA" onClick={refresh}><Icon name="refresh" /></button>{current && <a className="icon-button" href={current.source_url} target="_blank" rel="noreferrer" aria-label="Open NASA source for local investigation"><Icon name="external" /></a>}</div></div>
       </>}
-    <p className="calendar-resolution"><Icon name="info" />NASA POWER meteorology represents an approximately 0.5° × 0.625° model grid cell: the surrounding area, rather than an individual street. Daily weather below calculates hot days, frost days, warm-night proxies and dry runs from daily NASA records.</p>
+    <p className="calendar-resolution"><Icon name="info" />NASA POWER meteorology represents an approximately 0.5° × 0.625° model grid cell: the surrounding area, rather than an individual street. The Daily weather tab calculates hot days, frost days, warm-night proxies and dry runs from daily NASA records.</p>
     <span className="sr-only" role="status">{message}</span>
   </section>
 }

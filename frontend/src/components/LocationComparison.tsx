@@ -8,6 +8,7 @@ import TrendEvidence from './TrendEvidence'
 import Icon from './Icon'
 
 type Props = {
+  standalone?: boolean
   enabled: boolean
   onToggle: () => void
   location: Location
@@ -22,7 +23,7 @@ type Props = {
 }
 
 export default function LocationComparison({ enabled, onToggle, location, comparisonLocation, onSelect,
-  primary, primaryLoading, variable, start, end, validPeriod }: Props) {
+  primary, primaryLoading, variable, start, end, validPeriod, standalone }: Props) {
   const [result, setResult] = useState<SeriesResponse | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -45,11 +46,11 @@ export default function LocationComparison({ enabled, onToggle, location, compar
     return () => { window.clearTimeout(timer); controller.abort() }
   }, [enabled, comparisonLocation.lat, comparisonLocation.lon, variable, start, end, validPeriod, samePoint, retry])
 
-  return <section className="comparison-section" aria-labelledby="comparison-heading">
+  return <section className="comparison-section" id="location-comparison" aria-labelledby="comparison-heading">
     <div className="support-section-heading"><div><p className="overline">Where is it changing?</p><h2 id="comparison-heading">One variable. Two places.</h2><p>A trend in one place does not tell the whole story. Compare the same period in another model grid cell.</p></div>
-      <button type="button" className="secondary-button" onClick={onToggle} aria-expanded={enabled} aria-controls="location-comparison">{enabled ? 'Hide comparison' : 'Compare places'}<Icon name="chevron" /></button>
+      {!standalone && <button type="button" className="secondary-button" onClick={onToggle} aria-expanded={enabled} aria-controls="location-comparison-content">{enabled ? 'Hide comparison' : 'Compare places'}<Icon name="chevron" /></button>}
     </div>
-    {enabled && <div id="location-comparison">
+    {enabled && <div id="location-comparison-content">
       <div className="comparison-controls"><label htmlFor="comparison-location">Compare with</label><select id="comparison-location" value={comparisonLocation.id ?? 'pinned'} onChange={event => { const next = exampleLocations.find(item => item.id === event.target.value); if (next) onSelect(next) }}>
         {!comparisonLocation.id && <option value="pinned">Pinned map point</option>}
         {exampleLocations.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}

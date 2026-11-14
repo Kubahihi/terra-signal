@@ -16,7 +16,7 @@ Prague and Medicine Hat include attributed original NASA snapshots for outages.
 The interface reports source, retrieval date, data origin, units, and limitations.
 The statistics are exploratory and still need the team's scientific review.
 
-The **One-click examples** cards open Brno × Athens hot-day comparisons, frost-day
+The **One-click examples** cards in Explore open Brno × Athens hot-day comparisons, frost-day
 declines near Brno/Berlin, and warm-night increases near Athens/Sydney. Each click
 sets both points, 1981–2025, the relevant daily metric and highlighted year 2025,
 opens comparison and loads the records. Reopening a card restores these settings
@@ -25,8 +25,14 @@ after manual exploration. The displayed reference rates are from the saved
 The complete analysis and NASA source URLs can be downloaded under the cards;
 live chart badges retain their four-test correction per point.
 
+The workspace is organized into Explore, Calendar, Daily weather, Compare places,
+and Data & methods tabs. The location and period are shared, and switching tabs
+preserves chart selections, loaded daily records and map zoom. Links and browser
+Back/Forward open the corresponding workspace.
+
 The light map workspace supports selecting any point by click, dragging the marker,
-or entering coordinates. Selecting a point, variable, or valid period updates the
+or entering coordinates. Scroll the wheel or double-click to zoom, drag to pan,
+or expand the map and press Escape to return. Selecting a point, variable, or valid period updates the
 analysis automatically; obsolete browser requests are cancelled. The interactive
 chart offers monthly observations and day-weighted annual means (complete years
 only); both views retain the original monthly trend analysis. Hover or use arrow
