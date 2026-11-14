@@ -4,6 +4,7 @@ import MapPicker from './components/MapPicker'
 import SeriesChart from './components/SeriesChart'
 import TrendEvidence from './components/TrendEvidence'
 import InvestigationStarter from './components/InvestigationStarter'
+import DailyExampleStarter from './components/DailyExampleStarter'
 import LocationComparison from './components/LocationComparison'
 import DataResources from './components/DataResources'
 import LocalQuestions from './components/LocalQuestions'
@@ -12,6 +13,7 @@ import DailyComparison from './components/DailyComparison'
 import { getHealth, getSeries } from './lib/api'
 import { coordinates, exampleLocations, locationAt, type Location } from './lib/locations'
 import { variableInfo, type Investigation } from './lib/investigations'
+import { exampleAnalysis, type DailyExample } from './lib/dailyExamples'
 import { seriesCsv } from './lib/csv'
 import { useDailyRecord } from './lib/useDailyRecord'
 import type { CalendarSelection, DailyMetric, DailySelection, SeriesResponse, Variable } from './types/api'
@@ -31,6 +33,7 @@ type ComparisonView = 'daily' | 'monthly'
 function routeFromHash() {
   const hash = window.location.hash.slice(1)
   const aliases: Record<string, Workspace> = {
+    'daily-examples': 'explore',
     'analysis-settings': 'explore', 'location-map-panel': 'explore',
     'local-questions': 'calendar', 'daily-extremes': 'daily',
     'daily-place-comparison': 'compare', 'location-comparison': 'compare', 'comparison-heading': 'compare',
@@ -190,6 +193,25 @@ export default function App() {
     setComparisonEnabled(value => !value)
   }
 
+  function startDailyExample(example: DailyExample) {
+    pickLocation(example.location)
+    setComparisonLocation(example.comparison)
+    setStart(exampleAnalysis.start)
+    setEnd(exampleAnalysis.end)
+    setVariable('T2M')
+    setComparisonEnabled(true)
+    setMapTarget('b')
+    setInvestigation(null)
+    setCalendarSelection({ period: 'year', view: 'values' })
+    // A new selection also resets metric/year when reopening the same example.
+    setDailyMetric(example.metric)
+    setDailyYear(exampleAnalysis.end)
+    setDailySelection({ metric: example.metric, autoLoad: true })
+    setActionMessage(`Example opened: ${example.title}, ${exampleAnalysis.start}–${exampleAnalysis.end}.`)
+    setComparisonView('daily')
+    navigate('compare', 'daily-place-comparison')
+  }
+
   function chooseOnMap(point: 'a' | 'b') {
     setComparisonEnabled(true)
     setMapTarget(point)
@@ -250,6 +272,7 @@ export default function App() {
       {activeInvestigation && workspace !== 'methods' && <aside className="investigation-prompt" aria-label="Investigation guide"><strong>{activeInvestigation.question}</strong><p>{activeInvestigation.prompt}</p><div className="guide-actions"><a href={activeInvestigation.focus === 'daily' ? '#daily-extremes' : '#local-questions'}>View the investigation <Icon name="arrow" /></a><button type="button" className="text-button" onClick={() => setInvestigation(null)}>Dismiss guide</button></div></aside>}
 
       <section className="workspace-panel" id="workspace-explore" role="tabpanel" aria-labelledby="tab-explore" tabIndex={0} hidden={workspace !== 'explore'}>
+      <DailyExampleStarter onStart={startDailyExample} />
       <div className="explorer">
         <section className="map-panel" id="location-map-panel" aria-label="Choose a location">
           <div className="section-heading"><h2>Explore the map</h2><span>Scroll to zoom · drag to explore</span></div>

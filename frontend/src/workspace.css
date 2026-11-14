@@ -39,7 +39,7 @@
 .choose-on-map { color: var(--accent); }
 .skip-link { position: fixed; left: 24px; top: -70px; padding: 12px 18px; border-radius: 5px; color: #fff; background: var(--accent); z-index: 4000; font-size: 12px; }
 .skip-link:focus { top: 12px; }
-#workspace-start, .workspace-panel, #location-map-panel, #analysis-settings, #local-questions, #daily-extremes, #daily-place-comparison, #location-comparison, #comparison-heading, #data-resources { scroll-margin-top: 140px; }
+#workspace-start, .workspace-panel, #daily-examples, #location-map-panel, #analysis-settings, #local-questions, #daily-extremes, #daily-place-comparison, #location-comparison, #comparison-heading, #data-resources { scroll-margin-top: 140px; }
 
 @media (min-width: 1200px) {
   .workspace-tabs { gap: 8px; }
@@ -75,5 +75,5 @@
   .comparison-workspace-toolbar .segmented { width: 100%; }
   .comparison-workspace-toolbar .segmented button { justify-content: center; flex: 1; font-size: 11px; padding: 10px 8px; }
   .comparison-workspace-toolbar > .secondary-button { width: 100%; }
-  #workspace-start, .workspace-panel, #location-map-panel, #analysis-settings, #local-questions, #daily-extremes, #daily-place-comparison, #location-comparison, #comparison-heading, #data-resources { scroll-margin-top: 146px; }
+  #workspace-start, .workspace-panel, #daily-examples, #location-map-panel, #analysis-settings, #local-questions, #daily-extremes, #daily-place-comparison, #location-comparison, #comparison-heading, #data-resources { scroll-margin-top: 146px; }
 }
