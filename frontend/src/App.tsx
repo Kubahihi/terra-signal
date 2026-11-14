@@ -209,7 +209,7 @@ export default function App() {
   }
 
   return <div className="app-shell">
-    <a className="skip-link" href={`#workspace-${workspace}`}>Skip to workspace</a>
+    <a className="skip-link" href={`#workspace-${workspace}`} onClick={event => { event.preventDefault(); const panel = document.getElementById(`workspace-${workspace}`); panel?.focus({ preventScroll: true }); panel?.scrollIntoView({ block: 'start' }) }}>Skip to workspace</a>
     <header className="topbar workspace-header">
       <div className="workspace-brand-row">
         <a className="brand" href="#explore" aria-label="TerraSignal home" onClick={event => { event.preventDefault(); navigate('explore') }}><Icon name="globe" />TerraSignal</a>
