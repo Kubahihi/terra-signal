@@ -1,0 +1,25 @@
+# Python environment and generated files
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# Local configuration and credentials
+.env
+.env.*
+!.env.example
+
+# Frontend dependencies and build output
+node_modules/
+dist/
+coverage/
+
+# Local caches and logs
+.cache/
+*.log
+.DS_Store
+Thumbs.db
