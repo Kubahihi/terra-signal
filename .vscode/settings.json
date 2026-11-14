@@ -1,6 +1,24 @@
 {
   "python.defaultInterpreterPath": "${workspaceFolder}/.venv",
   "python.terminal.activateEnvironment": true,
+  "terminal.integrated.env.windows": {
+    "PATH": "${env:LOCALAPPDATA}\\Programs\\nodejs;${env:PATH}"
+  },
+  "terminal.integrated.profiles.windows": {
+    "TerraSignal (.venv)": {
+      "path": "${env:windir}\\System32\\cmd.exe",
+      "env": {
+        "VIRTUAL_ENV": "${workspaceFolder}\\.venv",
+        "VIRTUAL_ENV_PROMPT": "(.venv) ",
+        "PATH": "${workspaceFolder}\\.venv\\Scripts;${env:LOCALAPPDATA}\\Programs\\nodejs;${env:PATH}",
+        "PROMPT": "(.venv) $P$G",
+        "PYTHONHOME": null,
+        "_OLD_VIRTUAL_PATH": "${env:LOCALAPPDATA}\\Programs\\nodejs;${env:PATH}",
+        "_OLD_VIRTUAL_PROMPT": "$P$G"
+      }
+    }
+  },
+  "terminal.integrated.defaultProfile.windows": "TerraSignal (.venv)",
   "files.exclude": {
     "**/__pycache__": true
   },

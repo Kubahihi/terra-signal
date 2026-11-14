@@ -1,0 +1,60 @@
+import Icon from './Icon'
+
+const groups = [
+  {
+    title: 'Find more Earth science variables',
+    intro: 'Explore other records and regions in the challenge’s data portals.',
+    items: [
+      { title: 'Giovanni', organization: 'NASA', url: 'https://giovanni.earthdata.nasa.gov/', description: 'Select geophysical variables and generate maps or time series.' },
+      { title: 'Hydrology Time Series', organization: 'NASA GES DISC', url: 'https://disc.gsfc.nasa.gov/information/tools?title=Hydrology%20Time%20Series', description: 'Explore time-series tools for hydrological data.' },
+      { title: 'AppEEARS', organization: 'NASA / USGS', url: 'https://appeears.earthdatacloud.nasa.gov/', description: 'Extract point or area samples from geospatial datasets. Earthdata sign-in is required for extraction.' },
+      { title: 'Climate Data Online', organization: 'NOAA NCEI', url: 'https://www.ncei.noaa.gov/cdo-web/', description: 'Find historical weather, climate records and station information.' },
+    ],
+  },
+  {
+    title: 'Explore methods and examples',
+    intro: 'Use these references to investigate assumptions and interpret uncertainty.',
+    items: [
+      { title: 'KNMI Climate Explorer', organization: 'KNMI', url: 'https://climexp.knmi.nl/', description: 'Explore climate time series, gridded fields and relationships between records.' },
+      { title: 'SeaWiFS chlorophyll time-series study', organization: 'NASA Technical Reports Server', url: 'https://ntrs.nasa.gov/api/citations/20090042747/downloads/20090042747.pdf', description: 'A research example of time-series creation and significance testing in coastal regions. PDF.' },
+      { title: 'Statistical trend tests', organization: 'Third-party introduction · Medium', url: 'https://medium.com/@snp.kriss/statistical-test-methods-to-detect-trends-in-time-series-data-b361a0ec530b', description: 'An additional introduction listed in the challenge resources.' },
+      { title: 'Statistical significance guide', organization: 'Third-party introduction · Statsig', url: 'https://www.statsig.com/perspectives/a-comprehensive-guide-to-statistical-significance', description: 'Further reading on significance, alongside the assumptions of the test being used.' },
+    ],
+  },
+  {
+    title: 'Discover Canadian observations',
+    intro: 'The challenge also points to water, radar and ecosystem resources.',
+    items: [
+      { title: 'RADARSAT Constellation Mission data', organization: 'Canadian Space Agency', url: 'https://donnees-data.asc-csa.gc.ca/en/dataset/rcm', description: 'Radar observations for maritime, disaster and ecosystem monitoring.' },
+      { title: 'GEO.ca', organization: 'Government of Canada', url: 'https://geo.ca/', description: 'Explore Canada’s open geospatial information.' },
+      { title: 'SWOT mission', organization: 'Canadian Space Agency', url: 'https://www.asc-csa.gc.ca/eng/satellites/swot/', description: 'Learn about observations of surface-water elevation and its change over time.' },
+      { title: 'Monitoring ecosystems from space', organization: 'Canadian Space Agency', url: 'https://www.asc-csa.gc.ca/eng/satellites/everyday-lives/monitoring-and-protecting-our-ecosystems-from-space.asp', description: 'Examples of using satellite observations to understand environmental change.' },
+      { title: 'Synthetic Aperture Radar tutorial', organization: 'Canadian Space Agency · GitHub', url: 'https://github.com/asc-csa/Synthetic_Aperture_Radar_Tutorial', description: 'Practical guidance for working with SAR imagery in Python and QGIS.' },
+    ],
+  },
+]
+
+export default function DataResources() {
+  return <section className="resources-section" id="data-resources" aria-labelledby="resources-heading">
+    <div className="support-section-heading"><div><p className="overline">Follow the evidence</p><h2 id="resources-heading">Data, methods & further exploration.</h2><p>Know what you are measuring, where it came from and what a trend can tell you.</p></div></div>
+    <div className="connected-source">
+      <div><span className="dataset-label">Dataset used in TerraSignal</span><h3>NASA POWER · MERRA-2 meteorology</h3><p>Daily and monthly temperature and precipitation records come from a reanalysis: a model that combines observations with a representation of the atmosphere. Each selected point represents a model grid cell, rather than a weather station or an average of an entire city or country.</p>
+        <p>The result panel and CSV preserve the original request, retrieval date and whether the response was live, cached or a saved snapshot. Saved observations are labelled; they are never presented as a new NASA retrieval.</p>
+        <div className="source-links"><a href="https://power.larc.nasa.gov/docs/services/api/temporal/monthly/" target="_blank" rel="noreferrer">Monthly API & coverage <Icon name="external" /></a><a href="https://power.larc.nasa.gov/docs/services/api/temporal/daily/" target="_blank" rel="noreferrer">Daily API & time standards <Icon name="external" /></a><a href="https://power.larc.nasa.gov/docs/methodology/data/sources_meteorology/" target="_blank" rel="noreferrer">MERRA-2 data provenance <Icon name="external" /></a></div>
+      </div>
+      <div className="reading-results"><h3>Read the result, not just the slope.</h3><dl>
+        <div><dt>Rate of change</dt><dd>The fitted change per year or decade, in the variable’s units. It is an estimate for the chosen period, not a forecast.</dd></div>
+        <div><dt>95% confidence interval</dt><dd>Uncertainty in the estimated rate under this model. An interval containing zero does not resolve the trend at the 5% level.</dd></div>
+        <div><dt>p-value</dt><dd>Under a zero-trend hypothesis and the model assumptions, how unusual a test statistic at least this extreme would be. It is not the probability that there is no change.</dd></div>
+        <div><dt>Temperature departure</dt><dd>A selected month is compared with the same month in the fixed 1991–2020 reference. The calendar workspace uses day-weighted means and requires complete current and reference months.</dd></div>
+        <div><dt>Seasonality & significance</dt><dd>The all-month model controls for calendar-month differences with 12 monthly HAC lags. Calendar investigations use yearly aggregates with one annual HAC lag. Testing many months or periods can produce chance findings; choose a question before looking for a small p-value.</dd></div>
+      </dl><a className="method-reference" href="https://www.statsmodels.org/stable/generated/statsmodels.regression.linear_model.OLSResults.get_robustcov_results.html" target="_blank" rel="noreferrer">Statistical method reference <Icon name="external" /></a></div>
+    </div>
+    <p className="resources-intro">Continue your investigation with the challenge resources below. These open external services; their datasets are not automatically loaded into TerraSignal. Access requirements and data-use terms vary by provider.</p>
+    <div className="resource-groups">{groups.map(group => <details className="resource-group" key={group.title}>
+      <summary><span><strong>{group.title}</strong><small>{group.items.length} resources</small></span><Icon name="chevron" /></summary>
+      <p>{group.intro}</p><ul>{group.items.map(item => <li key={item.url}><a href={item.url} target="_blank" rel="noreferrer"><strong>{item.title}</strong><Icon name="external" /></a><span>{item.organization}</span><p>{item.description}</p></li>)}</ul>
+    </details>)}</div>
+    <p className="nasa-disclaimer">NASA does not endorse any non-U.S. Government entity and is not responsible for information contained on non-U.S. Government websites. For non-U.S. Government websites, participants must comply with any data use parameters of that specific website.</p>
+  </section>
+}

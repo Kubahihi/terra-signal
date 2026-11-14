@@ -3,6 +3,14 @@ export type Location = { id?: string; name: string; lat: number; lon: number }
 export const exampleLocations: Location[] = [
   { id: 'prague', name: 'Prague, Czechia', lat: 50.0755, lon: 14.4378 },
   { id: 'medicine-hat', name: 'Medicine Hat, Canada', lat: 50.0405, lon: -110.6765 },
+  { id: 'brno', name: 'Brno, Czechia', lat: 49.1951, lon: 16.6068 },
+  { id: 'ostrava', name: 'Ostrava, Czechia', lat: 49.8209, lon: 18.2625 },
+  { id: 'berlin', name: 'Berlin, Germany', lat: 52.52, lon: 13.405 },
+  { id: 'london', name: 'London, United Kingdom', lat: 51.5074, lon: -0.1278 },
+  { id: 'athens', name: 'Athens, Greece', lat: 37.9838, lon: 23.7275 },
+  { id: 'phoenix', name: 'Phoenix, USA', lat: 33.4484, lon: -112.074 },
+  { id: 'sydney', name: 'Sydney, Australia', lat: -33.8688, lon: 151.2093 },
+  { id: 'nairobi', name: 'Nairobi, Kenya', lat: -1.2921, lon: 36.8219 },
 ]
 
 export function coordinates(lat: number, lon: number) {

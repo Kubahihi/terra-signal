@@ -1,10 +1,11 @@
-import type { HealthResponse, SeriesQuery, SeriesResponse } from '../types/api'
+import type { CalendarResponse, DailyDataset, DailyQuery, DailyResponse, DailyTrendsResponse, HealthResponse, SeriesQuery, SeriesResponse } from '../types/api'
 
 const baseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
 
-async function request<T>(path: string, signal?: AbortSignal): Promise<T> {
+async function request<T>(path: string, signal?: AbortSignal, init?: RequestInit): Promise<T> {
   const response = await fetch(`${baseUrl}${path}`, {
-    headers: { Accept: 'application/json' },
+    ...init,
+    headers: { Accept: 'application/json', ...init?.headers },
     signal,
   })
   const body: unknown = await response.json().catch(() => null)
@@ -23,4 +24,23 @@ export function getSeries(query: SeriesQuery, refresh = false, signal?: AbortSig
   const params = new URLSearchParams(Object.entries(query).map(([key, value]) => [key, String(value)]))
   if (refresh) params.set('refresh', 'true')
   return request<SeriesResponse>(`/api/series?${params}`, signal)
+}
+
+export function getCalendar(query: SeriesQuery, refresh = false, signal?: AbortSignal): Promise<CalendarResponse> {
+  const params = new URLSearchParams(Object.entries(query).map(([key, value]) => [key, String(value)]))
+  if (refresh) params.set('refresh', 'true')
+  return request<CalendarResponse>(`/api/calendar?${params}`, signal)
+}
+
+export function getDaily(query: DailyQuery, refresh = false, signal?: AbortSignal): Promise<DailyResponse> {
+  const params = new URLSearchParams(Object.entries(query).map(([key, value]) => [key, String(value)]))
+  if (refresh) params.set('refresh', 'true')
+  return request<DailyResponse>(`/api/daily?${params}`, signal)
+}
+
+export function getDailyTrends(data: DailyDataset, signal?: AbortSignal): Promise<DailyTrendsResponse> {
+  return request<DailyTrendsResponse>('/api/daily/trends', signal, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ latitude: data.lat, longitude: data.lon, start: data.start, end: data.end, years: data.years }),
+  })
 }

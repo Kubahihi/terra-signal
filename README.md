@@ -10,6 +10,8 @@ React + TypeScript frontend, FastAPI backend, validated API contract, local prox
 development tasks, and a container definition for a single-host deployment.
 The first MVP loads real NASA POWER temperature and precipitation series, plots
 monthly observations, and estimates a seasonal linear trend with HAC uncertainty.
+Daily maxima, minima and precipitation now provide annual hot/frost-day counts,
+warm-night proxies and longest within-calendar-year dry runs.
 Prague and Medicine Hat include attributed original NASA snapshots for outages.
 The interface reports source, retrieval date, data origin, units, and limitations.
 The statistics are exploratory and still need the team's scientific review.
@@ -22,6 +24,49 @@ only); both views retain the original monthly trend analysis. Hover or use arrow
 keys to inspect values. Download CSV exports include NASA source and retrieval
 metadata. The map uses Leaflet and attributed OpenStreetMap tiles; NASA remains
 the source of the environmental observations.
+
+Three guided investigations explore daily frost counts near Prague, daily dry
+runs near Medicine Hat, and a remembered year's temperature departure.
+The calendar workspace has a year slider, twelve month selectors and four
+cross-year-aware seasonal views. Temperature departures use a fixed 1991–2020
+reference independently of the selected analysis window. Precipitation totals
+use actual calendar-month lengths, including leap days. Missing months remain
+gaps. Daily indices are computed from a separate daily NASA POWER connection.
+
+**Daily weather** loads the selected period explicitly, or when starting a daily
+guided question. Progress, cancellation and retry are available for cached
+five-year batches. Select one of four index cards and move its year slider to
+inspect counts, coverage and dry-run dates. Exact annual indices require all
+relevant days; incomplete years retain labelled observed lower bounds. Dry runs
+are clipped to each calendar year, and warm nights use daily Tmin > 20 C as a
+proxy. Annual-index and raw daily CSV downloads retain provenance and thresholds.
+The four annual indices also have descriptive linear trends in days per decade,
+individual 95% confidence intervals and two-sided HAC(1 annual lag) p-values.
+Significance badges use Holm correction across the four indices at the selected
+point and period. At least 20 complete years and 80% coverage are required;
+internal gaps, constant or exact-line records, and fewer than five nonzero years
+withhold inference. Trend cards, a fitted line and a separate trend CSV retain
+the distinction between an unresolved trend and an absence of change.
+
+Click **Compare two places** on the map, select **Point A** or **Point B**, then
+click anywhere to move that point. Both labelled markers can also be dragged.
+**View daily comparison** opens two records with a synchronized year/metric,
+the same requested period, and a shared vertical scale. Counts, trend rates,
+individual intervals, adjusted p-values and coverage remain separate per point.
+The annual table reports A minus B only for two exact values; the comparison CSV
+retains both source chains, lower bounds and missing values. Nearby points can
+share a NASA grid cell. Example city points are optional shortcuts; arbitrary
+map clicks need no preset. Only Prague and Medicine Hat have monthly snapshots.
+
+The monthly comparison uses the same A/B pair, variable and period, with its
+existing independent chart scales. At either resolution, individual zero-trend
+tests do not constitute a test of the difference between the two places.
+
+Variable definitions, p-value/interval explanations and the challenge's NASA,
+NOAA, KNMI and Canadian resources are available in **Data & methods**. NASA POWER
+is the connected provider; the other resources open external tools and are not
+presented as implemented data integrations. The NASA non-endorsement and
+third-party data-use notice is included.
 
 ## Project layout
 
@@ -55,15 +100,30 @@ also works without changing PowerShell's execution policy or activating a shell.
 
 ## Run
 
-In VS Code: **Terminal > Run Task > Dev: all**. Alternatively use two terminals:
+In VS Code, open a new terminal in the repository root and run:
+
+```cmd
+npm run dev
+```
+
+This starts the backend first, waits until it is ready, then starts the frontend.
+Press **Ctrl+C** to stop both servers. Node.js must be installed and available on
+the terminal's PATH. If PowerShell blocks npm scripts, use `npm.cmd run dev`.
+On Windows, a lightweight watcher restarts the backend process tree after changes
+to `backend/app/`, forwarding its logs without sending console interrupts to npm
+or Vite. Backend test-file edits do not restart the application.
+
+To run the servers separately, use **Terminal > Run Task > Dev: all**, or two terminals:
 
 ```powershell
 .\.venv\Scripts\python.exe -m uvicorn backend.app.main:app --reload --reload-dir backend --host 127.0.0.1 --port 8000
 ```
 
-```powershell
-npm.cmd --prefix frontend run dev
+```cmd
+npm run dev:frontend
 ```
+
+The frontend can also be started with `npm run dev` from `frontend/`.
 
 - App: http://127.0.0.1:5173
 - Backend status: http://127.0.0.1:8000/health
@@ -83,6 +143,7 @@ Never put credentials in `VITE_` variables or commit `.env` files.
 
 ```powershell
 npm.cmd --prefix frontend run build
+npm.cmd --prefix frontend test
 .\.venv\Scripts\python.exe -m compileall -q backend
 .\.venv\Scripts\python.exe -m unittest discover -s backend/tests -v
 ```
