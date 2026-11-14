@@ -1,14 +1,18 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import { locationAt, type Location } from '../lib/locations'
 import Icon from './Icon'
+import './MapPicker.css'
 
-export default function MapPicker({ location, onSelect, comparisonLocation, onComparisonSelect, activePoint = 'a' }: {
+export default function MapPicker({ location, onSelect, comparisonLocation, onComparisonSelect, activePoint = 'a', visible = true }: {
   location: Location; onSelect: (location: Location) => void
   comparisonLocation?: Location; onComparisonSelect?: (location: Location) => void; activePoint?: 'a' | 'b'
+  visible?: boolean
 }) {
   const container = useRef<HTMLDivElement>(null)
+  const stage = useRef<HTMLDivElement>(null)
+  const expandButton = useRef<HTMLButtonElement>(null)
   const mapRef = useRef<L.Map | null>(null)
   const markerRef = useRef<L.Marker | null>(null)
   const comparisonMarkerRef = useRef<L.Marker | null>(null)
@@ -16,7 +20,11 @@ export default function MapPicker({ location, onSelect, comparisonLocation, onCo
   const selectRef = useRef(onSelect)
   const primarySelectRef = useRef(onSelect)
   const comparisonSelectRef = useRef(onComparisonSelect)
+  const selectionTimer = useRef<number | undefined>(undefined)
   const [tileError, setTileError] = useState(false)
+  const [zoom, setZoom] = useState(4)
+  const [expanded, setExpanded] = useState(false)
+  const instructionId = useId()
   primarySelectRef.current = onSelect
   comparisonSelectRef.current = onComparisonSelect
   selectRef.current = activePoint === 'b' && comparisonLocation && onComparisonSelect ? onComparisonSelect : onSelect
@@ -25,7 +33,8 @@ export default function MapPicker({ location, onSelect, comparisonLocation, onCo
     if (!container.current) return
     const map = L.map(container.current, {
       center: [initial.current.lat, initial.current.lon], zoom: 4, minZoom: 2, maxZoom: 13,
-      zoomControl: false, worldCopyJump: true, scrollWheelZoom: false,
+      zoomControl: false, worldCopyJump: true, scrollWheelZoom: true,
+      wheelPxPerZoomLevel: 100, wheelDebounceTime: 60,
     })
     mapRef.current = map
     L.control.zoom({ position: 'bottomright' }).addTo(map)
@@ -44,11 +53,59 @@ export default function MapPicker({ location, onSelect, comparisonLocation, onCo
     }).addTo(map)
     markerRef.current = marker
     marker.on('dragend', () => { const point = marker.getLatLng(); primarySelectRef.current(locationAt(Math.max(-90, Math.min(90, point.lat)), point.lng)) })
-    map.on('click', (event: L.LeafletMouseEvent) => selectRef.current(locationAt(Math.max(-90, Math.min(90, event.latlng.lat)), event.latlng.lng)))
-    const observer = new ResizeObserver(() => map.invalidateSize())
+    // Give a double-click time to become a zoom gesture instead of moving a pin.
+    const cancelSelection = () => window.clearTimeout(selectionTimer.current)
+    map.on('click', (event: L.LeafletMouseEvent) => {
+      cancelSelection()
+      if (event.originalEvent.detail > 1) return
+      const point = event.latlng
+      const select = selectRef.current
+      selectionTimer.current = window.setTimeout(() => select(locationAt(Math.max(-90, Math.min(90, point.lat)), point.lng)), 300)
+    })
+    map.on('dblclick dragstart zoomstart', cancelSelection)
+    map.on('zoomend', () => setZoom(map.getZoom()))
+    let resizeFrame = 0
+    const observer = new ResizeObserver(([entry]) => {
+      if (!entry || !entry.contentRect.width || !entry.contentRect.height) return
+      window.cancelAnimationFrame(resizeFrame)
+      resizeFrame = window.requestAnimationFrame(() => map.invalidateSize({ animate: false }))
+    })
     observer.observe(container.current)
-    return () => { observer.disconnect(); map.remove(); mapRef.current = null; markerRef.current = null; comparisonMarkerRef.current = null }
+    return () => { cancelSelection(); window.cancelAnimationFrame(resizeFrame); observer.disconnect(); map.remove(); mapRef.current = null; markerRef.current = null; comparisonMarkerRef.current = null }
   }, [])
+
+  useEffect(() => {
+    if (!visible) {
+      window.clearTimeout(selectionTimer.current)
+      setExpanded(false)
+      return
+    }
+    const frame = window.requestAnimationFrame(() => mapRef.current?.invalidateSize({ animate: false }))
+    return () => window.cancelAnimationFrame(frame)
+  }, [visible])
+
+  useEffect(() => {
+    if (!expanded) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    expandButton.current?.focus()
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') { event.preventDefault(); setExpanded(false); return }
+      if (event.key !== 'Tab') return
+      const controls = stage.current?.querySelectorAll<HTMLElement>('button, a[href], [tabindex="0"]')
+      if (!controls?.length) return
+      const first = controls[0]
+      const last = controls[controls.length - 1]
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus() }
+      else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus() }
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      document.removeEventListener('keydown', handleKey)
+      expandButton.current?.focus({ preventScroll: true })
+    }
+  }, [expanded])
 
   useEffect(() => {
     const map = mapRef.current
@@ -74,10 +131,14 @@ export default function MapPicker({ location, onSelect, comparisonLocation, onCo
     comparisonMarkerRef.current.setLatLng([comparisonLocation.lat, comparisonLocation.lon])
   }, [comparisonLocation?.lat, comparisonLocation?.lon])
 
-  return <div className="map-stage">
-    <div ref={container} className="location-map" role="region" aria-label={`Interactive location map. Click to select point ${comparisonLocation && activePoint === 'b' ? 'B' : 'A'}, or enter coordinates below.`} />
-    <div className="map-tools"><button type="button" className="map-tool" aria-label="Center map on selected point" title="Center on selected point" onClick={() => { const point = comparisonLocation && activePoint === 'b' ? comparisonLocation : location; mapRef.current?.setView([point.lat, point.lon], 5, { animate: false }) }}><Icon name="target" /></button>{comparisonLocation && <button type="button" className="map-tool" aria-label="Show both comparison points" title="Show both points" onClick={() => mapRef.current?.fitBounds([[location.lat, location.lon], [comparisonLocation.lat, comparisonLocation.lon]], { padding: [45, 45], maxZoom: 7, animate: false })}><Icon name="pin" /></button>}<button type="button" className="map-tool" aria-label="Show world map" title="Show world map" onClick={() => mapRef.current?.setView([25, 0], 2, { animate: false })}><Icon name="globe" /></button></div>
-    <div className="map-instruction"><Icon name="pin" /><span>{comparisonLocation ? `Click to move point ${activePoint.toUpperCase()}` : 'Click to explore a location'}</span></div>
+  return <div ref={stage} className={`map-stage interactive-map${expanded ? ' map-expanded' : ''}`} role={expanded ? 'dialog' : undefined} aria-modal={expanded ? true : undefined} aria-label={expanded ? 'Expanded location map' : undefined}>
+    <div ref={container} className="location-map" role="region" aria-describedby={instructionId} aria-label={`Interactive location map. Click to select point ${comparisonLocation && activePoint === 'b' ? 'B' : 'A'}, or enter coordinates below.`} />
+    <div className="map-tools">
+      <button ref={expandButton} type="button" className="map-tool" aria-label={expanded ? 'Close expanded map' : 'Expand map'} title={expanded ? 'Close map (Esc)' : 'Expand map'} aria-expanded={expanded} onClick={() => setExpanded(value => !value)}><svg className="icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={expanded ? 'M6 6l12 12M6 18 18 6' : 'M8 3H3v5m13-5h5v5M3 16v5h5m8 0h5v-5'} /></svg></button>
+      <button type="button" className="map-tool" aria-label="Center map on selected point" title="Center on selected point" onClick={() => { const point = comparisonLocation && activePoint === 'b' ? comparisonLocation : location; mapRef.current?.setView([point.lat, point.lon], 5, { animate: false }) }}><Icon name="target" /></button>{comparisonLocation && <button type="button" className="map-tool" aria-label="Show both comparison points" title="Show both points" onClick={() => mapRef.current?.fitBounds([[location.lat, location.lon], [comparisonLocation.lat, comparisonLocation.lon]], { padding: [45, 45], maxZoom: 7, animate: false })}><Icon name="pin" /></button>}<button type="button" className="map-tool" aria-label="Show world map" title="Show world map" onClick={() => mapRef.current?.setView([25, 0], 2, { animate: false })}><Icon name="globe" /></button>
+    </div>
+    <div className="map-instruction map-interactive-instruction" id={instructionId}><Icon name="pin" /><div><span>{comparisonLocation ? `Click to move point ${activePoint.toUpperCase()}` : 'Click to explore a location'}</span><small><span className="map-desktop-hint">Scroll to zoom · Drag to pan · Double-click to zoom</span><span className="map-touch-hint">Pinch to zoom · Drag to pan · Tap to select</span></small></div></div>
+    <output className="map-zoom-readout" aria-label="Map zoom level" aria-live="polite">Zoom {zoom}</output>
     {tileError && <p className="map-unavailable" role="status">Some map tiles are unavailable. You can still select a point or enter coordinates below.</p>}
   </div>
 }

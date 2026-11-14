@@ -10,6 +10,7 @@ import { YearBarChart } from './CalendarChart'
 import Icon from './Icon'
 
 type Props = {
+  standalone?: boolean
   enabled: boolean; onToggle: () => void; onChooseMapPoint: (point: 'a' | 'b') => void
   location: Location; comparisonLocation: Location; onSelect: (location: Location) => void
   primary: DailyRecordState; metric: DailyMetric; onMetric: (metric: DailyMetric) => void
@@ -19,7 +20,7 @@ type Props = {
 export default function DailyComparison(props: Props) {
   const selector = useId()
   return <section className="daily-place-comparison" id="daily-place-comparison" aria-labelledby="daily-comparison-heading">
-    <div className="support-section-heading"><div><p className="overline">Daily indices · two map points</p><h2 id="daily-comparison-heading">The same question. Another place.</h2><p>Mark A and B on the map to compare daily extremes over the same period.</p></div><button type="button" className="secondary-button" onClick={props.onToggle} aria-expanded={props.enabled} aria-controls="daily-comparison-content">{props.enabled ? 'Hide daily comparison' : 'Compare daily places'}<Icon name="chevron" /></button></div>
+    <div className="support-section-heading"><div><p className="overline">Daily indices · two map points</p><h2 id="daily-comparison-heading">The same question. Another place.</h2><p>Mark A and B on the map to compare daily extremes over the same period.</p></div>{!props.standalone && <button type="button" className="secondary-button" onClick={props.onToggle} aria-expanded={props.enabled} aria-controls="daily-comparison-content">{props.enabled ? 'Hide daily comparison' : 'Compare daily places'}<Icon name="chevron" /></button>}</div>
     {props.enabled && <div id="daily-comparison-content">
       <div className="daily-comparison-picker"><div><span className="comparison-point-key">A</span><div><strong>{props.location.name}</strong><p>{coordinates(props.location.lat, props.location.lon)}</p></div><button type="button" className="text-button" onClick={() => props.onChooseMapPoint('a')}>Choose A on map <Icon name="pin" /></button></div><div><span className="comparison-point-key point-b">B</span><div><strong>{props.comparisonLocation.name}</strong><p>{coordinates(props.comparisonLocation.lat, props.comparisonLocation.lon)}</p></div><button type="button" className="text-button" onClick={() => props.onChooseMapPoint('b')}>Choose B on map <Icon name="pin" /></button></div></div>
       <details className="daily-comparison-examples"><summary>Or choose a comparison example <Icon name="chevron" /></summary><label htmlFor={selector}>Point B</label><select id={selector} value={props.comparisonLocation.id ?? 'custom'} onChange={event => { const next = exampleLocations.find(item => item.id === event.target.value); if (next) props.onSelect(next) }}><option value="custom" disabled>Clicked map point</option>{exampleLocations.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></details>

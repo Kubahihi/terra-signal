@@ -1,0 +1,54 @@
+.map-stage.map-expanded {
+  position: fixed;
+  inset: 14px;
+  z-index: 3000;
+  width: auto;
+  height: auto;
+  border: 1px solid #d1dce1;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 0 0 30px #23384480, 0 18px 70px #172b4533;
+}
+
+.map-interactive-instruction {
+  max-width: calc(100% - 82px);
+  align-items: flex-start;
+  box-shadow: 0 2px 8px #21364009;
+}
+
+.map-interactive-instruction > .icon { margin-top: 2px; }
+.map-interactive-instruction > div { display: grid; gap: 4px; }
+.map-interactive-instruction small { color: #71818a; font-size: 9px; line-height: 1.5; }
+.map-touch-hint { display: none; }
+.map-zoom-readout {
+  position: absolute;
+  z-index: 500;
+  right: 10px;
+  bottom: 104px;
+  padding: 5px 8px;
+  color: #526977;
+  background: #ffffffed;
+  border: 1px solid #d4dbdf;
+  border-radius: 4px;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.interactive-map .location-map { cursor: grab; }
+.interactive-map .location-map.leaflet-drag-target { cursor: grabbing; }
+.map-expanded .map-tools { right: 18px; top: 18px; }
+.map-expanded .map-interactive-instruction { left: 18px; top: 18px; }
+
+@media (pointer: coarse) {
+  .map-desktop-hint { display: none; }
+  .map-touch-hint { display: inline; }
+  .interactive-map .map-tool { width: 40px; height: 40px; }
+}
+
+@media (max-width: 600px) {
+  .map-stage.map-expanded { inset: 6px; border-radius: 8px; }
+  .map-interactive-instruction small { font-size: 8px; }
+  .map-expanded .map-tools { right: 10px; top: 10px; }
+  .map-expanded .map-interactive-instruction { left: 10px; top: 10px; }
+}

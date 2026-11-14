@@ -1,26 +1,22 @@
 import { useEffect, useId, useState } from 'react'
 import { dailyAnnualCsv, dailyMetrics, dailyObservationsCsv } from '../lib/dailyData'
 import { dailyFit, dailyTrendsCsv } from '../lib/dailyTrends'
-import { useDailyRecord } from '../lib/useDailyRecord'
+import type { DailyRecordState } from '../lib/useDailyRecord'
 import { originLabel } from '../lib/evidence'
 import type { Location } from '../lib/locations'
 import type { DailyMetric, DailySelection } from '../types/api'
 import { YearBarChart } from './CalendarChart'
 import DailyTrendPanel from './DailyTrendPanel'
-import DailyComparison from './DailyComparison'
 import Icon from './Icon'
 
 const dayLabel = (date: string) => new Date(`${date}T00:00:00Z`).toLocaleDateString('en', { day: 'numeric', month: 'short', timeZone: 'UTC' })
 
-export default function DailyWeather({ location, comparisonLocation, onComparisonSelect, comparisonEnabled, onToggleComparison, onChooseMapPoint, start, end, validPeriod, selection }: {
+export default function DailyWeather({ location, start, end, validPeriod, selection, record, metric, onMetric: setMetric, year, onYear: setYear }: {
   location: Location; start: number; end: number; validPeriod: boolean; selection: DailySelection
-  comparisonLocation: Location; onComparisonSelect: (location: Location) => void
-  comparisonEnabled: boolean; onToggleComparison: () => void; onChooseMapPoint: (point: 'a' | 'b') => void
+  record: DailyRecordState; metric: DailyMetric; onMetric: (metric: DailyMetric) => void
+  year: number; onYear: (year: number) => void
 }) {
-  const [metric, setMetric] = useState<DailyMetric>(selection.metric)
-  const [year, setYear] = useState(end)
   const [message, setMessage] = useState('')
-  const record = useDailyRecord({ lat: location.lat, lon: location.lon, start, end }, validPeriod)
   const { current, busy, error: fatalError, progress, trends, trendLoading, trendError, load, stop, retryTrends, changed } = record
   const sliderId = useId()
   const selectedYear = Math.max(start, Math.min(end, year))
@@ -82,7 +78,6 @@ export default function DailyWeather({ location, comparisonLocation, onCompariso
         <div className="daily-footer"><div><button className="secondary-button" type="button" onClick={() => download('indices')}>Download annual indices <Icon name="download" /></button><button className="secondary-button" type="button" onClick={() => download('observations')}>Download daily observations <Icon name="download" /></button><button className="secondary-button" type="button" disabled={!trends || trendLoading || !!trendError} onClick={() => download('trends')}>Download trends <Icon name="download" /></button></div><button type="button" className="text-button" onClick={() => load(true)}>Refresh daily data from NASA <Icon name="refresh" /></button></div>
       </>}
     </>}
-    <DailyComparison enabled={comparisonEnabled} onToggle={onToggleComparison} onChooseMapPoint={onChooseMapPoint} location={location} comparisonLocation={comparisonLocation} onSelect={onComparisonSelect} primary={record} metric={metric} onMetric={setMetric} year={selectedYear} onYear={setYear} start={start} end={end} validPeriod={validPeriod} />
     <span className="sr-only" role="status">{message}</span>
   </section>
 }
