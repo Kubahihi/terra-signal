@@ -45,6 +45,21 @@ class NormalizationTests(unittest.TestCase):
         self.assertEqual(len(result.series), 24)
         self.assertEqual(result.unit, 'mm/day')
 
+    def test_negative_precipitation_is_a_gap_and_real_zero_is_preserved(self):
+        values = self.payload['properties']['parameter']['PRECTOTCORR']
+        values['200001'] = -0.1
+        values['200002'] = 0
+        result = self.normalize(self.payload, query(Variable.PRECIPITATION, 2000, 2001))
+        self.assertIsNone(result.series[0].value)
+        self.assertEqual(result.series[1].value, 0)
+        self.assertTrue(any('negative precipitation' in warning for warning in result.warnings))
+
+    def test_unknown_units_are_rejected_instead_of_analysed_as_celsius_or_daily_rain(self):
+        for variable, unit in ((Variable.TEMPERATURE, 'K'), (Variable.PRECIPITATION, 'mm')):
+            self.payload['parameters'][variable.value]['units'] = unit
+            with self.subTest(variable=variable), self.assertRaises(nasa_power.ProviderError):
+                self.normalize(self.payload, query(variable))
+
     def test_snapshot_provenance_is_verified_and_coordinates_match(self):
         saved = nasa_power._snapshot(query(start=2000, end=2010))
         self.assertIsNotNone(saved)

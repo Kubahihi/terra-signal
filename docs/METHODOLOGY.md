@@ -6,6 +6,9 @@ NASA POWER Monthly and Annual API, AG community, MERRA-2-based meteorology.
 The implemented point parameters are T2M (temperature at 2 m, C) and PRECTOTCORR
 (corrected precipitation, mm/day). Units come from each response's metadata.
 Monthly precipitation is a mean daily rate; it is not a monthly total.
+The provider must report `C` for T2M and `mm/day` for PRECTOTCORR. Unsupported
+units are rejected before analysis or caching. Negative precipitation rates are
+invalid and remain gaps; a genuine zero remains an observation.
 
 Only calendar months 01-12 are observations. Annual summary keys ending in 13
 are excluded. Missing values, fill values, non-finite values, and absent months
@@ -46,11 +49,17 @@ of dependence or model misspecification. The lag choice is a documented starting
 point that still needs sensitivity checks.
 
 MVP quality thresholds: at least 60 available observations over five years, all
-12 calendar months represented, and at least 80% coverage within the observed
-span. These are product heuristics, not universal scientific sufficiency rules.
+12 calendar months represented, and at least 80% coverage across the full
+requested monthly window, including missing edge months. These are product
+heuristics, not universal scientific sufficiency rules. Missing edge months
+are disclosed with the actual first and last months used in the fit.
 If internal months are missing, show the slope but withhold the HAC interval and
 p-value because its lag spacing would no longer represent contiguous months.
-Constant series have slope zero and no significance claim.
+Constant series have slope zero and no significance claim. Records explained
+exactly by the seasonal model (maximum absolute residual at most 1e-10) retain
+their descriptive slope but withhold inference: numerical residuals do not
+constitute measured variability. Nonfinite or zero-variance uncertainty is also
+withheld. This is consistent with the exact-line guard in daily-index analysis.
 
 A p-value below 0.05 is interpreted only under this model. A nonsignificant result
 does not demonstrate an absence of change. Searching many regions/periods for
@@ -62,6 +71,15 @@ number of nonmissing observations divided by the full requested number of months
 Rates and confidence bounds are displayed per decade; the annual rate is also
 shown. CSV exports preserve unrounded rates, interval bounds, p-value, sample
 size, units, provenance, period and warnings alongside the original monthly data.
+
+The result panel and monthly CSV also show **fitted change**: the annual slope
+times elapsed calendar months / 12 between the first and last available
+observations. The selected window is never substituted for missing edge data.
+The 95% slope bounds are scaled by the same positive elapsed time. This measures
+the linear trend component with the seasonal cycle held fixed, not the observed
+endpoint difference or a forecast. For precipitation its unit remains mm/day;
+it is a change in mean daily rate, never accumulated rainfall. A zero estimate
+stays zero, and unavailable uncertainty remains unavailable.
 
 ## Local questions: reference, seasons and totals
 
@@ -94,7 +112,9 @@ using OLS, one annual HAC lag, a small-sample correction and t-based inference.
 At least ten complete years and 80% completeness across the requested window are
 app thresholds. An internal gap withholds HAC confidence and p-value because row
 lags would no longer be calendar-year lags. Constant records yield a zero slope
-without a significance claim. This does not replace the all-month seasonal model.
+without a significance claim. Exact lines (maximum absolute residual at most
+1e-10) also retain only descriptive rates, matching the monthly and daily
+safeguards. This does not replace the all-month seasonal model.
 The year slider highlights an observation without refitting the trend.
 
 Daily hot/frost-day counts, warm-night proxies and consecutive dry-day lengths

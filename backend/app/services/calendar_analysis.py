@@ -49,8 +49,8 @@ def analyze_yearly(points: list[CalendarPoint]) -> tuple[CalendarTrend | None, l
         return None, ["The aggregated trend could not be estimated reliably."]
     bounds = fitted.conf_int(alpha=0.05)[1] * 10
     ci = (float(bounds[0]), float(bounds[1])) if np.all(np.isfinite(bounds)) else None
-    p = float(fitted.pvalues[1])
-    p = p if math.isfinite(p) else None
+    p_value = float(fitted.pvalues[1])
+    p = p_value if math.isfinite(p_value) else None
     warnings = [
         "The trend uses complete yearly aggregates, OLS and HAC uncertainty with one annual lag. "
         "This exploratory model is not the all-month seasonal model shown above."
@@ -58,6 +58,14 @@ def analyze_yearly(points: list[CalendarPoint]) -> tuple[CalendarTrend | None, l
     if np.max(np.diff(years)) > 1:
         ci = p = None
         warnings.append("Missing internal years interrupt annual HAC spacing; the interval and p-value are withheld.")
+    if np.max(np.abs(fitted.resid)) <= 1e-10:
+        ci = p = None
+        if abs(slope) * (years[-1] - years[0]) <= 1e-10:
+            slope = 0.0
+        warnings.append("The yearly aggregates fit an exact line; residual variation cannot support a significance test. Only the fitted rate is reported.")
+    elif not np.all(np.isfinite(bounds)) or not math.isfinite(p_value) or fitted.bse[1] <= 0:
+        ci = p = None
+        warnings.append("Finite uncertainty could not be estimated; confidence intervals and p-values are withheld.")
     return CalendarTrend(
         method=method, slope_per_year=slope, slope_per_decade=slope * 10,
         ci95_per_decade=ci, p_value=p, sample_size=len(values), hac_lags=1,

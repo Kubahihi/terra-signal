@@ -3,6 +3,7 @@ import unittest
 from datetime import date
 from unittest.mock import AsyncMock, patch
 
+import numpy as np
 from fastapi.testclient import TestClient
 
 from backend.app.main import app
@@ -108,13 +109,26 @@ class CalendarAggregationTests(unittest.TestCase):
 
 class CalendarTrendTests(unittest.TestCase):
     def test_known_month_and_summer_trends_recovered_in_year_units(self):
-        result = build_calendar(source(slope=0.3), 1981, 2025)
+        data = source(slope=0.3)
+        rng = np.random.default_rng(42)
+        for point in data.series:
+            point.value += float(rng.normal(0, 0.15))
+        result = build_calendar(data, 1981, 2025)
         for key in ("m01", "jja"):
             analysis = period(result, key).analysis
-            self.assertAlmostEqual(analysis.slope_per_decade, 3)
+            self.assertAlmostEqual(analysis.slope_per_decade, 3, delta=0.05)
             self.assertEqual(analysis.lag_unit, "years")
             self.assertEqual(analysis.hac_lags, 1)
             self.assertLess(analysis.p_value, 0.05)
+
+    def test_exact_month_and_season_lines_keep_rates_but_withhold_inference(self):
+        result = build_calendar(source(slope=0.3), 1981, 2025)
+        for key in ("m01", "jja"):
+            selected = period(result, key)
+            self.assertAlmostEqual(selected.analysis.slope_per_decade, 3)
+            self.assertIsNone(selected.analysis.p_value)
+            self.assertIsNone(selected.analysis.ci95_per_decade)
+            self.assertTrue(any('residual variation' in warning for warning in selected.warnings))
 
     def test_gaps_do_not_compress_elapsed_time_and_withhold_inference(self):
         points = [CalendarPoint(year=year, value=year - 2000, baseline_value=None, anomaly=None,

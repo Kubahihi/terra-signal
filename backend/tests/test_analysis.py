@@ -30,6 +30,33 @@ class TrendTests(unittest.TestCase):
     def test_seasonality_alone_does_not_become_a_long_term_trend(self):
         analysis, _ = analyze_trend(observations(slope=0, noise=False))
         self.assertAlmostEqual(analysis.slope_per_year, 0, places=9)
+        self.assertIsNone(analysis.p_value)
+        self.assertIsNone(analysis.ci95_per_decade)
+
+    def test_exact_seasonal_line_retains_its_rate_without_manufactured_uncertainty(self):
+        analysis, warnings = analyze_trend(observations(slope=0.3, noise=False))
+        self.assertAlmostEqual(analysis.slope_per_decade, 3)
+        self.assertIsNone(analysis.p_value)
+        self.assertIsNone(analysis.ci95_per_decade)
+        self.assertTrue(any('residual variation' in warning for warning in warnings))
+
+    def test_missing_edge_months_count_against_requested_coverage(self):
+        series = observations()
+        for point in series[:180]:
+            point.value = None
+        analysis, warnings = analyze_trend(series)
+        self.assertIsNone(analysis)
+        self.assertTrue(any('requested' in warning for warning in warnings))
+
+    def test_eighty_percent_coverage_retains_and_discloses_the_actual_fitted_span(self):
+        series = observations()
+        for point in series[:48]:
+            point.value = None
+        analysis, warnings = analyze_trend(series)
+        self.assertIsNotNone(analysis.p_value)
+        self.assertEqual(analysis.sample_size, 192)
+        self.assertAlmostEqual(analysis.slope_per_year, 0.3, delta=0.01)
+        self.assertTrue(any('2004-01' in warning and '2019-12' in warning for warning in warnings))
 
     def test_constant_data_has_no_fabricated_significance(self):
         series = observations()

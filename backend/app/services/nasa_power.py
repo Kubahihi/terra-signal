@@ -108,7 +108,12 @@ def normalize_payload(query: SeriesQuery, saved: SavedPayload) -> SeriesResponse
     except (KeyError, TypeError, ValueError, AttributeError) as exc:
         raise ProviderError("NASA returned an incomplete or unsupported data response.") from exc
 
+    expected_unit = {"T2M": "C", "PRECTOTCORR": "mm/day"}[query.variable.value]
+    if unit != expected_unit:
+        raise ProviderError(f"NASA returned unsupported units for {query.variable.value}; expected {expected_unit}.")
+
     series: list[Observation] = []
+    negative_precipitation = 0
     for year in range(query.start, query.end + 1):
         for month in range(1, 13):
             raw = values.get(f"{year:04d}{month:02d}")
@@ -116,6 +121,9 @@ def normalize_payload(query: SeriesQuery, saved: SavedPayload) -> SeriesResponse
                 value = float(raw) if raw is not None and not isinstance(raw, bool) else None
                 if value is not None and (not math.isfinite(value) or value == fill):
                     value = None
+                if value is not None and query.variable.value == "PRECTOTCORR" and value < 0:
+                    value = None
+                    negative_precipitation += 1
             except (TypeError, ValueError):
                 value = None
             series.append(Observation(date=date(year, month, 1), value=value))
@@ -127,6 +135,8 @@ def normalize_payload(query: SeriesQuery, saved: SavedPayload) -> SeriesResponse
     missing = len(series) - available
     if missing:
         warnings.append(f"{missing} of {len(series)} requested months are missing; gaps are preserved.")
+    if negative_precipitation:
+        warnings.append(f"{negative_precipitation} negative precipitation rates were excluded as invalid observations.")
     if query.variable.value == "PRECTOTCORR":
         warnings.append("Precipitation is a monthly mean daily rate (mm/day), not a monthly total.")
     sources = ", ".join(str(source) for source in header.get("sources", []))

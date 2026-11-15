@@ -18,11 +18,28 @@ export function evidenceFor(analysis: TrendAnalysis | null | undefined, model = 
   }
   if (analysis.p_value < 0.05) return {
     state: 'significant', label: 'Significant at the 5% level',
-    conclusion: `Under this ${model}, there is evidence of a ${analysis.slope_per_decade > 0 ? 'rising' : 'falling'} trend over the selected period. This does not identify its cause or establish its practical importance.`,
+    conclusion: `Under this ${model}, there is evidence of a ${analysis.slope_per_decade > 0 ? 'rising' : 'falling'} trend over the fitted record. This does not identify its cause or establish its practical importance.`,
   }
   return {
     state: 'inconclusive', label: 'Trend not statistically resolved',
     conclusion: 'This model does not distinguish the trend from zero at the 5% level. That does not prove there is no change; the period, variability and data coverage matter.',
+  }
+}
+
+export function fittedChangeFor(result: SeriesResponse) {
+  if (!result.analysis || !Number.isFinite(result.analysis.slope_per_year)) return null
+  const available = result.series.filter(point => point.value !== null && Number.isFinite(point.value))
+    .sort((a, b) => a.date.localeCompare(b.date))
+  if (available.length < 2) return null
+  const first = available[0].date
+  const last = available[available.length - 1].date
+  const monthIndex = (date: string) => Number(date.slice(0, 4)) * 12 + Number(date.slice(5, 7)) - 1
+  const elapsedYears = (monthIndex(last) - monthIndex(first)) / 12
+  if (!Number.isFinite(elapsedYears) || elapsedYears <= 0) return null
+  return {
+    first, last, elapsedYears,
+    change: result.analysis.slope_per_year * elapsedYears,
+    ci95: result.analysis.ci95_per_decade?.map(bound => bound * elapsedYears / 10) ?? null,
   }
 }
 

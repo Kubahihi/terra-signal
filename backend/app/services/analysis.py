@@ -19,8 +19,11 @@ def analyze_trend(series: list[Observation]) -> tuple[TrendAnalysis | None, list
     # Product quality thresholds, not universal definitions of statistical adequacy.
     if len(observations) < 60 or span < 5:
         return None, ["For this exploratory model, use at least 60 observations spanning five years."]
-    if len(observations) / (span * 12) < 0.8:
-        return None, ["More than 20% of the observed time span is missing; trend estimation is withheld."]
+    requested_first = min(point.date for point in series)
+    requested_last = max(point.date for point in series)
+    requested_months = (requested_last.year - requested_first.year) * 12 + requested_last.month - requested_first.month + 1
+    if len(observations) / requested_months < 0.8:
+        return None, ["More than 20% of the requested monthly time span is missing; trend estimation is withheld."]
     values = np.array([point.value for point in observations], dtype=float)
     time_years = (month_index - month_index[0]) / 12
     months = np.array([point.date.month for point in observations])
@@ -48,12 +51,26 @@ def analyze_trend(series: list[Observation]) -> tuple[TrendAnalysis | None, list
     ]
     if not math.isfinite(slope):
         return None, ["The trend could not be estimated reliably for this selection."]
+    if observations[0].date != requested_first or observations[-1].date != requested_last:
+        warnings.append(
+            f"Missing edge months limit the fitted trend to {observations[0].date:%Y-%m} through "
+            f"{observations[-1].date:%Y-%m}. No change is extrapolated over the missing edges."
+        )
     ci = (float(interval[0]), float(interval[1])) if np.all(np.isfinite(interval)) else None
     p = p_value if math.isfinite(p_value) else None
     if np.max(np.diff(month_index)) > 1:
         ci = None
         p = None
         warnings.append("The slope uses available observations, but significance is withheld because missing months interrupt the monthly HAC spacing.")
+    if np.max(np.abs(fitted.resid)) <= 1e-10:
+        ci = p = None
+        # Remove numerical roundoff for a record explained by seasonality alone.
+        if abs(slope) * span <= 1e-10:
+            slope = 0.0
+        warnings.append("The observations fit the seasonal model exactly; residual variation cannot support a significance test. Only the fitted rate is reported.")
+    elif not np.all(np.isfinite(interval)) or not math.isfinite(p_value) or fitted.bse[1] <= 0:
+        ci = p = None
+        warnings.append("Finite uncertainty could not be estimated; confidence intervals and p-values are withheld.")
     return TrendAnalysis(
         method=method, slope_per_year=slope, slope_per_decade=slope * 10,
         ci95_per_decade=ci, p_value=p, sample_size=len(values), hac_lags=lag,

@@ -325,7 +325,7 @@ export default function App() {
         </select></div>
         {workspace !== 'explore' && <button type="button" className="secondary-button choose-on-map" onClick={() => navigate('explore', 'location-map-panel')}><Icon name="map" />Choose on map</button>}
       </div>
-      {!validPeriod && <p className="form-error" role="alert">Choose whole years between 1981 and {lastYear}, with the start before the end.</p>}
+      {!validPeriod && <p className="form-error" role="alert">Choose whole years between 1981 and {lastYear}, with the start no later than the end.</p>}
       <details className="variable-help" hidden={workspace === 'daily' || workspace === 'relationships' || workspace === 'compare' && comparisonView === 'daily'}><summary>About {variableInfo[variable].title.toLowerCase()} <Icon name="chevron" /></summary><p><strong>{variable}.</strong> {variableInfo[variable].definition} <a href="#data-resources">Data details</a></p></details>
       </div>
       {activeInvestigation && workspace !== 'methods' && workspace !== 'atlas' && <aside className="investigation-prompt" aria-label="Investigation guide"><strong>{activeInvestigation.question}</strong><p>{activeInvestigation.prompt}</p><div className="guide-actions"><a href={activeInvestigation.focus === 'daily' ? '#daily-extremes' : '#local-questions'}>View the investigation <Icon name="arrow" /></a><button type="button" className="text-button" onClick={() => setInvestigation(null)}>Dismiss guide</button></div></aside>}

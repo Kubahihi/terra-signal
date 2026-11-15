@@ -4,6 +4,48 @@ Explore NASA Earth data, detect trends, and understand uncertainty.
 
 NASA Space Apps Challenge 2026 — **Be An Earth System Trend Detective!**
 
+## Challenge acceptance audit — 2026-11-15
+
+Checked against the [official challenge](https://www.spaceappschallenge.org/2026/challenges/earth-system-trend-detective/)
+(Details and Resources) and the [author's video](https://www.youtube.com/watch?v=Cd9Q48LhNbo).
+The implemented weather workflow covers the required scope within its stated
+NASA POWER grid-cell resolution:
+
+| Requirement | Where it is implemented and verified |
+| --- | --- |
+| Select Earth science variables | Explore offers NASA POWER T2M temperature and PRECTOTCORR precipitation, with definitions and validated units. NASA model outputs are eligible; every listed mission need not be integrated. |
+| Select a region and acquire its data | Place accepts map clicks or coordinates worldwide. Each selection represents the surrounding approximately 0.5° × 0.625° weather model cell. NASA requests, retrieval dates and saved-response origins are retained. `test_data.py` checks normalization and original snapshot provenance. |
+| Select a sufficiently long period | Explore accepts complete years from 1981 to the last complete year. Short or poorly covered records remain visible without unsupported trend claims. Coverage includes missing edge months. |
+| Generate and visualize a time series | Monthly observations and complete day-weighted annual means preserve calendar spacing and gaps. CSV retains observations and provenance. |
+| Report how much the variable changes | The point analysis reports rate per year/decade, its 95% interval and fitted change over the actual observed span, also exported to CSV. A rainfall-rate change remains mm/day. |
+| Test statistical significance | Seasonal OLS uses a two-sided t reference with HAC(12) uncertainty; Calendar uses yearly OLS/HAC(1). A p-value below 0.05 is interpreted under that model. Missing, insufficient, constant and exact-fit records cannot manufacture inference. `test_analysis.py` and `test_calendar.py` cover known trends and failure cases. |
+
+The video also discusses trends within a season. Explore → Calendar implements
+all four calendar seasons and individual months, including previous-December
+DJF, with separate trend fits. Guided examples, spatial comparisons, daily
+extremes, variable definitions and all 13 official resource links provide the
+suggested extensions. Map annual values/departures are distinguished from
+long-term trend inference; its 772-test family has an independent numerical audit.
+
+The AOD/wildfire example, AI-assisted discovery, polygon averages, a global
+mean, nonlinear models and additional missions are not mandatory. Point results
+must not be described as city/country averages; the app does not implement area
+averaging. Different local trend estimates do not constitute a statistical test
+of their difference. Unresolved trends remain valid investigation results.
+
+Validation: 141 backend tests completed (140 passed; one optional recount needs
+all original, ignored NASA response bytes), 83 frontend tests passed, and
+TypeScript checking and the Vite production build passed. Browser checks of the
+production build covered temperature, precipitation, seasonal and cross-year DJF
+records, short/invalid intervals, two-place monthly comparison, the 193-cell map
+and a real CSV download with fitted-change metadata. The backend checks used
+the bundled Python 3.12 with the existing environment's packages because this
+machine's `.venv` launcher points to an unavailable base interpreter.
+
+Scientific model review and a public deployment/demo are separate delivery
+steps listed in `docs/TEAM.md`; passing automated checks is not proof that all
+model assumptions hold. The audit adds no new data integration or deployment.
+
 ## Current state
 
 React + TypeScript frontend, FastAPI backend, validated API contract, local proxy,

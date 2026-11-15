@@ -36,7 +36,7 @@ still be returned if NASA is unavailable.
 | --- | --- |
 | `source` | Human-readable source, including dataset/version where available |
 | `variable` | NASA parameter identifier |
-| `unit` | Actual units from provider metadata |
+| `unit` | Validated provider units: `C` for T2M, `mm/day` for PRECTOTCORR |
 | `latitude`, `longitude` | Requested point coordinates |
 | `start`, `end` | Requested year range |
 | `series` | Ordered monthly `{date: "YYYY-MM-01", value: number or null}` records |
@@ -51,6 +51,14 @@ still be returned if NASA is unavailable.
 It also reports `sample_size` and `hac_lags`.
 The confidence interval refers to **the slope per decade**, not individual
 observations or a forecast interval. Undefined statistics must be null, never NaN.
+Monthly inference requires at least 60 available observations spanning five
+years, all twelve months represented, and 80% coverage of the requested window,
+including missing edges. Internal gaps, constant records and exact seasonal
+fits withhold inference. Missing edges disclose the actual fitted months in
+`warnings`. Negative rainfall values are null; unsupported units are rejected.
+The browser derives fitted change and its interval from the slope and the actual
+elapsed calendar months, and includes these values and dates in the monthly CSV.
+The response schema is unchanged.
 
 ## Calendar investigations
 
@@ -84,7 +92,7 @@ It fits one complete aggregate per year with OLS and one annual HAC lag, a small
 sample correction and t-based inference. Minimum quality thresholds are ten
 complete years and 80% of the requested years. Internal missing years withhold
 the interval and p-value while preserving the elapsed-time slope. Constant values
-have no significance claim. The model is distinct from the monthly seasonal
+and exact-line values have no significance claim. The model is distinct from the monthly seasonal
 regression in `/api/series`.
 
 ## Daily records and annual indices
