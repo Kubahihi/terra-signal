@@ -7,6 +7,7 @@ import type { Location } from '../lib/locations'
 import type { DailyMetric, DailySelection } from '../types/api'
 import { YearBarChart } from './CalendarChart'
 import DailyTrendPanel from './DailyTrendPanel'
+import DailyPeriodSensitivity from './DailyPeriodSensitivity'
 import Icon from './Icon'
 
 const dayLabel = (date: string) => new Date(`${date}T00:00:00Z`).toLocaleDateString('en', { day: 'numeric', month: 'short', timeZone: 'UTC' })
@@ -73,6 +74,7 @@ export default function DailyWeather({ location, start, end, validPeriod, select
           <div className="daily-spell-detail" aria-live="polite"><strong>Longest {spell?.value === null ? 'observed ' : ''}dry run in {selectedYear}</strong><p>{!spell ? 'No daily precipitation response for this year.' : spell.start_date && spell.end_date ? `${dayLabel(spell.start_date)}–${dayLabel(spell.end_date)} · ${spell.observed_count} consecutive days with less than 1 mm/day.` : spell.available_days === 0 ? 'No valid daily precipitation observations.' : 'No dry run was found among the available days.'}</p>{spell?.touches_year_boundary && <p>The run touches a year boundary and may continue into an adjacent year.</p>}<p>Runs are clipped to each calendar year. Missing days interrupt a run; on ties, the earliest observed run is shown.</p></div>
         </div></div>
         <DailyTrendPanel result={trends} metric={metric} locationName={location.name} start={start} end={end} loading={trendLoading} error={trendError} onRetry={retryTrends} onSelect={setMetric} />
+        <DailyPeriodSensitivity data={current} metric={metric} locationName={location.name} />
         <p className="daily-definition-note">Warm-night counts use the daily minimum as a proxy, not nighttime-only hourly measurements. All three variables use NASA Local Solar Time (LST), which differs from civil time and daylight saving time.</p>
         <details className="daily-sources"><summary>Daily sources, coverage & method notes <Icon name="chevron" /></summary><div>{current.warnings.map((warning, index) => <p key={index}>{warning}</p>)}<ul>{current.sources.map(source => <li key={`${source.start}-${source.end}`}><a href={source.source_url} target="_blank" rel="noreferrer">NASA daily response {source.start}–{source.end} <Icon name="external" /></a><span>{originLabel(source.data_origin)} · retrieved {new Date(source.retrieved_at).toLocaleString()}</span></li>)}</ul></div></details>
         <div className="daily-footer"><div><button className="secondary-button" type="button" onClick={() => download('indices')}>Download annual indices <Icon name="download" /></button><button className="secondary-button" type="button" onClick={() => download('observations')}>Download daily observations <Icon name="download" /></button><button className="secondary-button" type="button" disabled={!trends || trendLoading || !!trendError} onClick={() => download('trends')}>Download trends <Icon name="download" /></button></div><button type="button" className="text-button" onClick={() => load(true)}>Refresh daily data from NASA <Icon name="refresh" /></button></div>

@@ -143,3 +143,14 @@ export type DailyTrendsResponse = {
   metrics: Record<DailyMetric, DailyMetricTrend>
   warnings: string[]
 }
+
+export type DailyPeriodsResponse = {
+  latitude: number
+  longitude: number
+  start: number
+  end: number
+  family_size: number
+  alpha: number
+  periods: DailyTrendsResponse[]
+  warnings: string[]
+}

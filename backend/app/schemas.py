@@ -224,3 +224,14 @@ class DailyTrendsResponse(BaseModel):
     minimum_years: int = 20
     metrics: dict[DailyMetric, DailyMetricTrend]
     warnings: list[str]
+
+
+class DailyPeriodsResponse(BaseModel):
+    latitude: float
+    longitude: float
+    start: int
+    end: int
+    family_size: int
+    alpha: float = 0.05
+    periods: list[DailyTrendsResponse]
+    warnings: list[str]
