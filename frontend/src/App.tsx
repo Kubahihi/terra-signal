@@ -293,7 +293,7 @@ export default function App() {
     <a className="skip-link" href={`#workspace-${workspace}`} onClick={event => { event.preventDefault(); const panel = document.getElementById(`workspace-${workspace}`); panel?.focus({ preventScroll: true }); panel?.scrollIntoView({ block: 'start' }) }}>Skip to workspace</a>
     <header className="topbar workspace-header">
       <div className="workspace-brand-row">
-        <a className="brand" href="#atlas" aria-label="TerraSignal home" onClick={event => { event.preventDefault(); navigate('atlas') }}><Icon name="globe" />TerraSignal</a>
+        <a className="brand" href="#atlas" aria-label="TerraSignal home" onClick={event => { event.preventDefault(); navigate('atlas') }}><img className="brand-symbol" src="/brand/terrasignal-symbol.svg" width="34" height="34" alt="" /><span className="brand-wordmark">Terra<span>Signal</span></span></a>
       </div>
       <nav aria-label="Workspace navigation"><div className="workspace-tabs" role="tablist" aria-label="Main workspaces">
         {primaryWorkspaces.map((item, index) => <a key={item.id} id={`primary-${item.id}`} role="tab" href={`#${workspaceDestination(item.id === 'analysis' ? lastAnalysis.current : item.id)}`} aria-selected={primaryWorkspace === item.id} aria-controls={`workspace-${item.id}`} tabIndex={primaryWorkspace === item.id ? 0 : -1} onKeyDown={event => navigatePrimaryWithKeys(event, index)} onClick={event => { event.preventDefault(); navigatePrimary(item.id) }}><Icon name={item.icon} /><span>{item.label}</span></a>)}

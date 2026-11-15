@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="188" height="48" viewBox="0 0 188 48" role="img" aria-labelledby="title">
+  <title id="title">TerraSignal</title>
+  <g transform="translate(0 4)" fill="none">
+    <path d="M28 8.6a14 14 0 1 0 5.8 13.9" stroke="#284F63" stroke-width="3.2" stroke-linecap="round"/>
+    <path d="M7.5 24.5c4.5 0 6-3.5 9.5-3.5s6.5 1 10-4l2-2.5" stroke="#4D9285" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="33.5" cy="9.5" r="2.8" fill="#4D9285"/>
+  </g>
+  <text x="50" y="33" fill="#283D49" font-family="Segoe UI, Arial, sans-serif" font-size="27" font-weight="650" letter-spacing="-.9">Terra<tspan fill="#467B73" font-weight="600">Signal</tspan></text>
+</svg>
