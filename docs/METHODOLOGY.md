@@ -227,11 +227,16 @@ coverage and sources are disclosed on demand rather than repeated beside the
 map. Short functional controls replace repeated headline/tagline blocks.
 This reorganization does not change an index definition or statistical family.
 
-The opening Map visualizes the fixed 43-point, four-index 1981–2025
-archive in `frontend/public/data/trend-atlas-1981-2025.json`. It contains 1,935
-complete annual rows and 7,740 exact index values. The reproducible builder
+The opening Map visualizes the fixed 193-point, four-index 1981–2025
+archive in `frontend/public/data/trend-atlas-1981-2025.json`. It contains 8,685
+complete annual rows and 34,740 exact index values. The reproducible builder
 `scripts/build_trend_atlas.py` retains the original ten reference points and
-adds 33 coordinates fixed before acquisition and examination of this scan.
+adds 183 coordinates fixed before acquisition and examination of this scan.
+The latest expansion adds 150 points to the previous 43-point archive across
+all seven continents, including Arctic and Antarctic samples. Previously
+acquired annual counts and source provenance are retained; scan-wide Holm
+correction is recomputed over all 193 candidates. Completed points are reused
+on subsequent builds; incomplete acquisition does not replace the map archive.
 The original guided-reference file remains unchanged. **Year**, **Vs usual**
 and **Trend** are separate views. New links
 default to Vs usual; explicit legacy Year/Trend links keep their view. Moving
@@ -257,7 +262,7 @@ Trend uses full-record rates, with the accompanying chart labelled as annual
 counts. Annual counts, departures and their arithmetic differences are
 descriptive; no significance or uncertainty claim is inferred from their color.
 
-For each index/view, the marker scale is shared across all 43 points and stays
+For each index/view, the marker scale is shared across all 193 points and stays
 fixed across all animation years. Circle area above a small selectable center
 is proportional to magnitude. A blue–neutral–red scale encodes signed trend
 rates or departures; raw counts use a sequential light-to-red scale. Point
@@ -271,10 +276,10 @@ coverage for the weather trends. Obsolete `atlasLayer` query parameters are
 removed; there is no vegetation imagery layer on Map.
 
 Atlas significance uses `p_holm_scan` and `significant_across_scan` from the fixed
-172-test scan (43 candidates × four indices), rather than the nested per-point
+772-test scan (193 candidates × four indices), rather than the nested per-point
 four-test result. Individual 95%
 intervals are not simultaneous, so an interval can exclude zero while the
-172-test adjusted result remains unresolved. A constant observed series retains
+772-test adjusted result remains unresolved. A constant observed series retains
 a zero rate with unavailable inference. Comparing two displayed rates or annual
 counts does not test a difference between their trends.
 
@@ -282,8 +287,8 @@ The browser parser checks annual coverage, independently recomputes each OLS
 line, and checks the full Holm family before displaying the archive. The
 independent `backend/tests/test_expanded_atlas.py` audit additionally recomputes
 HAC(1) slope variance with centered calendar years, Bartlett weights, n/(n−2)
-correction and Student-t reference, verifying all 172 intervals and raw
-p-values. Its optional local test recounts the 33 new points from the exact
+correction and Student-t reference, verifying all 772 metric fits and their
+available intervals and raw p-values. Its optional local test recounts the 183 additional points from the exact
 original NASA response bytes named by SHA-256. This is skipped when the ignored
 cache is unavailable. The separate legacy audit checks all ten original points'
 annual records and fits, plus an optional original-cache daily recount for

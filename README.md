@@ -16,8 +16,9 @@ Prague and Medicine Hat include attributed original NASA snapshots for outages.
 The interface reports source, retrieval date, data origin, units, and limitations.
 The statistics are exploratory and still need the team's scientific review.
 
-The opening **Map** displays the saved 1981–2025 NASA analysis at 43 sampled
-grid cells, including more Czech, European and global points. Its three views are **Year** (exact annual counts), **Vs usual**
+The opening **Map** displays the saved 1981–2025 NASA analysis at 193 sampled
+grid cells. The latest expansion adds 150 places worldwide, including Arctic,
+tropical, inland, Pacific and Antarctic points. Its three views are **Year** (exact annual counts), **Vs usual**
 (the selected year's count minus that place's 1991–2020 mean) and **Trend**
 (the full-record fitted rate). New map links default to Vs usual; existing
 links that explicitly select Year or Trend retain that view.
@@ -27,7 +28,7 @@ each year, including leap years. One missing reference year withholds the
 departure. Map markers, the comparison chart and A minus B all show the same
 quantity for the chosen view. Color and size scales stay fixed across places
 and animation years. Annual counts and departures are descriptive and receive
-no significance label; Trend keeps its fixed 172-test Holm family and separately
+no significance label; Trend keeps its fixed 772-test Holm family and separately
 labelled individual 95% intervals. The points describe surrounding model cells,
 not administrative regions or an interpolated global trend surface.
 
@@ -37,13 +38,15 @@ uncertainty, coverage and source notes are available on demand. The interface
 uses short functional labels rather than repeated page headlines and taglines.
 There is no decorative vegetation overlay on Map.
 
-The opening map uses the separate `trend-atlas-1981-2025.json` archive: 1,935
-complete annual rows and 7,740 index values. The reproducible builder is
+The opening map uses the separate `trend-atlas-1981-2025.json` archive: 8,685
+complete annual rows and 34,740 index values. The reproducible builder is
 `scripts/build_trend_atlas.py`. An independent audit in
 `backend/tests/test_expanded_atlas.py` checks every fitted line, HAC interval,
-raw p-value and the full 172-test correction without calling the production
+raw p-value and the full 772-test correction without calling the production
 regression function. When the ignored original NASA cache is available, it also
-recounts the 33 new points from the exact response bytes identified by SHA-256.
+recounts the 183 additional points from the exact response bytes identified by SHA-256.
+The builder reuses completed archived points, checkpoints new downloads, and
+replaces the map archive only after every candidate has complete annual counts.
 The original ten-point guided-reference archive and its independent 40-test
 audit remain unchanged.
 

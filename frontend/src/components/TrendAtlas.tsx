@@ -27,9 +27,9 @@ function mapValue(point: AtlasPoint, metric: DailyMetric, year: number, mode: Mo
   return mode === 'trend' ? point.metrics[metric].slope : mode === 'anomaly' ? atlasDeparture(point, metric, year) : atlasAnnualValue(point, metric, year)
 }
 
-function fitOptions(map: L.Map, comparisonOpen: boolean): L.FitBoundsOptions {
+function fitOptions(comparisonOpen: boolean, overview = false): L.FitBoundsOptions {
   const sidebar = comparisonOpen && !window.matchMedia('(max-width: 760px)').matches
-  return { paddingTopLeft: [45, 110], paddingBottomRight: [sidebar ? 350 : 45, 120], maxZoom: 6, animate: false }
+  return { paddingTopLeft: [overview ? 24 : 45, overview ? 70 : 110], paddingBottomRight: [sidebar ? 350 : overview ? 24 : 45, overview ? 90 : 120], maxZoom: 6, animate: false }
 }
 
 export default function TrendAtlas({ visible = true, onOpenAnalysis }: {
@@ -111,7 +111,7 @@ export default function TrendAtlas({ visible = true, onOpenAnalysis }: {
     layerRef.current = L.layerGroup().addTo(map)
     const first = data.points.find(point => point.location.id === pair.a)
     const second = data.points.find(point => point.location.id === pair.b)
-    if (first && second) map.fitBounds([[first.location.lat, first.location.lon], [second.location.lat, second.location.lon]], fitOptions(map, comparisonOpen))
+    if (first && second) map.fitBounds([[first.location.lat, first.location.lon], [second.location.lat, second.location.lon]], fitOptions(comparisonOpen))
     let frame = 0
     const observer = new ResizeObserver(([entry]) => {
       if (!entry?.contentRect.width || !entry.contentRect.height) return
@@ -149,14 +149,14 @@ export default function TrendAtlas({ visible = true, onOpenAnalysis }: {
     return () => window.cancelAnimationFrame(frame)
   }, [visible])
 
-  function fitPlaces(points: L.LatLngExpression[]) {
+  function fitPlaces(points: L.LatLngExpression[], overview = false) {
     const map = mapRef.current
     if (!map) return
     // Read the current container before fitting: a resize observer may still be queued.
     map.invalidateSize({ animate: false })
     const closeDrawer = comparisonOpen && window.matchMedia('(max-width: 760px)').matches
     if (closeDrawer) setComparisonOpen(false)
-    map.fitBounds(L.latLngBounds(points), fitOptions(map, closeDrawer ? false : comparisonOpen))
+    map.fitBounds(L.latLngBounds(points), fitOptions(closeDrawer ? false : comparisonOpen, overview))
   }
   function fitPair() { if (a && b) fitPlaces([[a.location.lat, a.location.lon], [b.location.lat, b.location.lon]]) }
   function changeYear(next: number) { setPlaying(false); setYear(next) }
@@ -177,7 +177,7 @@ export default function TrendAtlas({ visible = true, onOpenAnalysis }: {
     </div>
     <div className={`atlas-workbench${comparisonOpen ? ' has-comparison' : ''}`}>
       <div ref={mapContainer} className="atlas-map" role="region" aria-label={`Interactive data map. Click a colored marker to select point ${target.toUpperCase()}. Scroll to zoom, drag to pan.`} />
-      <div className="atlas-map-controls"><div className="atlas-geography" role="group" aria-label="Map extent"><button type="button" onClick={() => fitPlaces(data.points.map(point => [point.location.lat, point.location.lon]))}>World</button><button type="button" onClick={() => mapRef.current?.setView([48, 13], 4, { animate: false })}>Europe</button><button type="button" onClick={() => mapRef.current?.setView([49.8, 16.2], 7, { animate: false })}>Czechia</button></div><button type="button" className="atlas-fit" aria-label="Show both comparison points on map" onClick={fitPair}><Icon name="target" />A + B</button></div>
+      <div className="atlas-map-controls"><div className="atlas-geography" role="group" aria-label="Map extent"><button type="button" onClick={() => fitPlaces(data.points.map(point => [point.location.lat, point.location.lon]), true)}>World</button><button type="button" onClick={() => mapRef.current?.setView([48, 13], 4, { animate: false })}>Europe</button><button type="button" onClick={() => mapRef.current?.setView([49.8, 16.2], 7, { animate: false })}>Czechia</button></div><button type="button" className="atlas-fit" aria-label="Show both comparison points on map" onClick={fitPair}><Icon name="target" />A + B</button></div>
       <div className="atlas-map-target"><span>Select</span><div className="segmented" aria-label="Map selection target"><button type="button" aria-pressed={target === 'a'} onClick={() => setTarget('a')}>A</button><button type="button" aria-pressed={target === 'b'} onClick={() => setTarget('b')}>B</button></div></div>
       <div className="atlas-data-label"><span>{mode === 'trend' ? `${data.start}–${data.end} · days / decade` : mode === 'anomaly' ? `${year} vs 1991–2020` : `${year} · days`}</span></div>
       {tileError && <p className="atlas-map-notice" role="status">Some map tiles are unavailable. The counts still work.</p>}
