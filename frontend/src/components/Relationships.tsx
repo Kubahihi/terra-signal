@@ -12,9 +12,9 @@ import './Relationships.css'
 
 const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 const questions = {
-  weather: { title: 'Do warmer months also receive less rain?', x: 'Air temperature', y: 'Precipitation total', icon: 'sun' },
-  soil: { title: 'How does soil wetness follow rainfall?', x: 'Precipitation total', y: 'Root-zone soil wetness', icon: 'water' },
-  vegetation: { title: 'Does greener vegetation follow wetter months?', x: 'Precipitation total', y: 'Vegetation greenness', icon: 'leaf' },
+  weather: { title: 'Rain & heat', x: 'Air temperature', y: 'Precipitation total' },
+  soil: { title: 'Rain & soil', x: 'Precipitation total', y: 'Root-zone soil wetness' },
+  vegetation: { title: 'Rain & vegetation', x: 'Precipitation total', y: 'Vegetation greenness' },
 } as const
 type Props = { visible?: boolean; location: Location; start: number; end: number; validPeriod: boolean; record: DailyRecordState; onSelect: (location: Location) => void; onPeriod: (start: number, end: number) => void }
 
@@ -23,7 +23,7 @@ export default function Relationships(props: Props) {
   return <section className="relationships" id="relationships" aria-label="Relationships between Earth observations">
     <div className="relationship-view-picker" aria-label="Relationship investigation">
       <button type="button" aria-pressed={view === 'compound'} onClick={() => setView('compound')}><Icon name="sun" /><span>Hot & dry days</span></button>
-      <button type="button" aria-pressed={view === 'weather'} onClick={() => setView('weather')}><Icon name="relationships" /><span>Temperature & rain</span></button>
+      <button type="button" aria-pressed={view === 'weather'} onClick={() => setView('weather')}><Icon name="relationships" /><span>Rain & heat</span></button>
       <button type="button" aria-pressed={view === 'soil'} onClick={() => setView('soil')}><Icon name="water" /><span>Rain & soil</span></button>
       <button type="button" aria-pressed={view === 'vegetation'} onClick={() => setView('vegetation')}><Icon name="leaf" /><span>Rain & vegetation</span></button>
     </div>
@@ -37,8 +37,11 @@ function CorrelationExplorer({ location, start, end, validPeriod, active, mode, 
   const [dataset, setDataset] = useState<{ key: string; value: RelationshipDataset } | null>(null)
   const [analysis, setAnalysis] = useState<{ key: string; value: RelationshipResponse } | null>(null)
   const [status, setStatus] = useState({ key: '', busy: false, error: '' })
+  const [cancelledKey, setCancelledKey] = useState('')
   const [analysisState, setAnalysisState] = useState({ key: '', busy: false, error: '' })
   const [progress, setProgress] = useState({ completed: 0, total: 0 })
+  const [loadStartedAt, setLoadStartedAt] = useState<number | null>(null)
+  const [elapsed, setElapsed] = useState(0)
   const [revision, setRevision] = useState(0)
   const [vegetationIntent, setVegetationIntent] = useState('')
   const [imported, setImported] = useState<VegetationData | null>(null)
@@ -54,7 +57,8 @@ function CorrelationExplorer({ location, start, end, validPeriod, active, mode, 
   latestImportContext.current = `${active}:${mode}:${placeKey}`
   const matchingImport = imported?.latitude === location.lat && imported.longitude === location.lon && imported.start === start && imported.end === end ? imported : null
   const dataKey = JSON.stringify({ placeKey, mode, imported: mode === 'vegetation' ? matchingImport?.filename ?? null : null, revision })
-  const current = dataset?.key === dataKey && status.key === dataKey && !status.busy && !status.error ? dataset.value : null
+  const cancelled = cancelledKey === dataKey
+  const current = dataset?.key === dataKey && status.key === dataKey && !status.busy && !status.error && !cancelled ? dataset.value : null
   const analysisKey = useMemo(() => JSON.stringify({ dataKey, settings }), [dataKey, settings])
   const result = current && analysis?.key === analysisKey && analysisState.key === analysisKey && !analysisState.busy && !analysisState.error ? analysis.value : null
   const loading = status.key === dataKey && status.busy
@@ -62,6 +66,14 @@ function CorrelationExplorer({ location, start, end, validPeriod, active, mode, 
   const analysisError = analysisState.key === analysisKey ? analysisState.error : ''
   const wanted = mode !== 'vegetation' || !!matchingImport || vegetationIntent === placeKey
   const satelliteEnd = end >= 2001 ? end : new Date().getUTCFullYear() - 1
+
+  useEffect(() => {
+    if (!active || !loading || loadStartedAt === null) return
+    const update = () => setElapsed(Math.max(0, Math.floor((Date.now() - loadStartedAt) / 1000)))
+    update()
+    const timer = window.setInterval(update, 1000)
+    return () => window.clearInterval(timer)
+  }, [active, loading, loadStartedAt])
 
   useEffect(() => {
     const file = importedFile.current
@@ -82,6 +94,9 @@ function CorrelationExplorer({ location, start, end, validPeriod, active, mode, 
     const refresh = refreshWanted.current
     refreshWanted.current = false
     setStatus({ key: dataKey, busy: true, error: '' })
+    setCancelledKey('')
+    setLoadStartedAt(Date.now())
+    setElapsed(0)
     setProgress({ completed: 0, total: mode === 'vegetation' ? Math.ceil((end - Math.max(start, 2001) + 1) / 5) : 1 })
     const timer = window.setTimeout(async () => {
       try {
@@ -103,7 +118,13 @@ function CorrelationExplorer({ location, start, end, validPeriod, active, mode, 
           if (response.latitude !== location.lat || response.longitude !== location.lon || response.start !== start || response.end !== end) throw new Error('Relationship sources do not match the selected point and period.')
         }
         if (!controller.signal.aborted) { cache.current.set(dataKey, response); setDataset({ key: dataKey, value: response }); setStatus({ key: dataKey, busy: false, error: '' }) }
-      } catch (cause) { if (!controller.signal.aborted) setStatus({ key: dataKey, busy: false, error: cause instanceof Error ? cause.message : 'The observations could not be loaded.' }) }
+      } catch (cause) {
+        if (!controller.signal.aborted) {
+          setStatus({ key: dataKey, busy: false, error: cause instanceof Error ? cause.message : 'The observations could not be loaded.' })
+          // Stop the other source when one half of the pair fails.
+          controller.abort()
+        }
+      }
     }, 350)
     return () => { window.clearTimeout(timer); controller.abort() }
   }, [active, validPeriod, wanted, dataKey])
@@ -120,7 +141,15 @@ function CorrelationExplorer({ location, start, end, validPeriod, active, mode, 
   }, [active, current, analysisKey])
 
   function retry(refresh = false) { refreshWanted.current = refresh; setVegetationIntent(placeKey); setRevision(value => value + 1) }
-  function stop() { controllerRef.current?.abort(); setStatus({ key: dataKey, busy: false, error: 'Loading stopped. You can retry this selection.' }) }
+  function loadVegetation() {
+    if (!matchingImport && start < 2001 && end >= 2001) {
+      setVegetationIntent(JSON.stringify({ lat: location.lat, lon: location.lon, start: 2001, end }))
+      setRevision(value => value + 1)
+      setMessage(`Using 2001–${end}, the available MODIS period.`)
+      onPeriod(2001, end)
+    } else retry()
+  }
+  function stop() { controllerRef.current?.abort(); setCancelledKey(dataKey); setStatus({ key: dataKey, busy: false, error: '' }) }
   async function importCsv(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0]
     event.target.value = ''
@@ -156,16 +185,37 @@ function CorrelationExplorer({ location, start, end, validPeriod, active, mode, 
     setMessage('Data downloaded with source details, settings and missing values retained.')
   }
   const question = questions[mode]
+  const loadingSatellite = mode === 'vegetation' && !matchingImport
+  const waitingForFirstBatch = loadingSatellite && progress.completed === 0
+  const satelliteComplete = loadingSatellite && progress.total > 0 && progress.completed === progress.total
+  const firstBatchYear = Math.max(2001, start)
   return <section className="correlation-explorer" aria-labelledby="relationship-heading" aria-busy={loading}>
-    <div className="relationship-question"><div><p className="overline">{location.name} · {start || '—'}–{end || '—'}</p><h2 id="relationship-heading">{question.title}</h2><p>Choose a calendar month and ask whether departures from its usual conditions move together.</p></div><span className="relationship-question-icon"><Icon name={question.icon} /></span></div>
+    <h2 id="relationship-heading" className="sr-only">{question.title}</h2>
     <div className="relationship-controls">
-      <label>Month of X<select aria-label="Relationship calendar month" value={settings.month ?? 0} onChange={event => setSettings(previous => ({ ...previous, month: Number(event.target.value) || null }))}><option value="0">All months · seasonal cycle removed</option>{months.map((month, index) => <option key={month} value={index + 1}>{month}</option>)}</select></label>
-      <label>Time between X and Y<select aria-label="Relationship time lag" value={settings.lag_months} onChange={event => setSettings(previous => ({ ...previous, lag_months: Number(event.target.value) as 0 | 1 | 2 }))}><option value="0">Same month</option><option value="1">Y one month after X</option><option value="2">Y two months after X</option></select></label>
+      <label>Month<select aria-label="Relationship calendar month" value={settings.month ?? 0} onChange={event => setSettings(previous => ({ ...previous, month: Number(event.target.value) || null }))}><option value="0">All months · seasonal cycle removed</option>{months.map((month, index) => <option key={month} value={index + 1}>{month}</option>)}</select></label>
+      <label>Lag<select aria-label="Relationship time lag" value={settings.lag_months} onChange={event => setSettings(previous => ({ ...previous, lag_months: Number(event.target.value) as 0 | 1 | 2 }))}><option value="0">Same month</option><option value="1">Y one month after X</option><option value="2">Y two months after X</option></select></label>
       <label className="relationship-checkbox"><input type="checkbox" checked={settings.detrend} onChange={event => setSettings(previous => ({ ...previous, detrend: event.target.checked }))} />Remove long-term linear trends</label>
     </div>
     <p className="relationship-direction"><span>X · {question.x}{settings.month ? ` in ${months[settings.month - 1]}` : ''}</span><Icon name="arrow" /><span>Y · {question.y}{settings.month ? ` in ${months[(settings.month - 1 + settings.lag_months) % 12]}` : ''}</span></p>
-    {mode === 'vegetation' && <div className="vegetation-access"><div><p className="overline">NASA Terra / MODIS · NDVI</p><h3>Follow vegetation greenness.</h3><p>NDVI is a satellite measure of vegetation greenness. Quality-screened 16-day composites are grouped by their start month; incomplete months stay gaps.</p><div className="vegetation-examples"><span>Try a place:</span><button type="button" className="text-button" onClick={() => { onSelect({ name: 'South Moravia, Czechia', lat: 48.85, lon: 16.85 }); onPeriod(2001, end < 2001 ? new Date().getUTCFullYear() - 1 : end) }}>South Moravia</button><button type="button" className="text-button" onClick={() => { onSelect({ id: 'medicine-hat', name: 'Medicine Hat, Canada', lat: 50.0405, lon: -110.6765 }); onPeriod(2001, end < 2001 ? new Date().getUTCFullYear() - 1 : end) }}>Medicine Hat</button></div></div><div className="vegetation-actions"><button type="button" className="secondary-button" disabled={!validPeriod || loading || end < 2001} onClick={() => retry()}><Icon name="leaf" />{matchingImport ? 'Recalculate imported NDVI' : 'Load MODIS vegetation data'}</button><label className="secondary-button vegetation-import"><Icon name="download" />Import filtered NDVI CSV<input type="file" accept=".csv,text/csv" aria-label="Import ORNL filtered and scaled NDVI CSV" onChange={importCsv} disabled={!validPeriod} /></label><a className="text-button" href="https://modis.ornl.gov/data.html" target="_blank" rel="noreferrer">Get an ORNL NDVI export <Icon name="external" /></a></div><p className="vegetation-access-note">The first satellite load may take several minutes. Public ORNL availability varies; its export tools may require Earthdata Login. Import accepts the original filtered_scaled_250m_16_days_NDVI.csv format for the selected point, with coordinates and quality gaps retained.</p>{start < 2001 && <p className="vegetation-period-note">Our MODIS integration starts in 2001. Earlier months cannot enter the correlation. <button type="button" className="text-button" onClick={() => onPeriod(2001, satelliteEnd)}>Use 2001–{satelliteEnd}</button></p>}{matchingImport && <p className="vegetation-import-note">Using imported file: {matchingImport.filename}. <button type="button" className="text-button" onClick={() => { importedFile.current = null; setImported(null); setVegetationIntent(''); setMessage('Imported NDVI removed from this workspace.') }}>Use NASA API instead</button></p>}{imported && !matchingImport && <p className="vegetation-import-note">A saved import belongs to another point or period. Return to its coordinates or import the original CSV for this selection.</p>}{importError && <p role="alert" className="form-error">{importError}</p>}</div>}
-    {!validPeriod ? <p className="form-error">Choose a valid analysis period above.</p> : loading ? <div className="relationship-loading" role="status"><Icon name="refresh" /><div><strong>{mode === 'vegetation' && !matchingImport ? 'Loading quality-screened MODIS observations…' : 'Loading matching NASA monthly records…'}</strong><p>{mode === 'vegetation' && !matchingImport ? `${progress.completed} / ${progress.total} satellite batches received. Raw responses are cached for reuse.` : 'The same point and requested period are used for both variables.'}</p></div><button type="button" className="text-button" onClick={stop}>Cancel loading</button></div> : error ? <div className="relationship-error" role="alert"><h3>The relationship data could not be loaded.</h3><p>{error}</p><button type="button" className="secondary-button" onClick={() => retry()}>Retry data <Icon name="refresh" /></button>{mode === 'vegetation' && <p>Temperature, soil and compound-weather analyses remain available. You can import an original filtered NDVI export above.</p>}</div> : !wanted ? <div className="relationship-empty">Choose a satellite period and load MODIS data, or import a quality-filtered export for this point.</div> : null}
+    {mode === 'vegetation' && <div className="vegetation-access">
+      <div>
+        <p>MODIS NDVI measures vegetation greenness. Good-quality 16-day composites are grouped by month; incomplete months stay gaps.</p>
+        <div className="vegetation-examples"><span>Try:</span><button type="button" className="text-button" onClick={() => { onSelect({ name: 'South Moravia, Czechia', lat: 48.85, lon: 16.85 }); onPeriod(2001, end < 2001 ? new Date().getUTCFullYear() - 1 : end) }}>South Moravia</button><button type="button" className="text-button" onClick={() => { onSelect({ id: 'medicine-hat', name: 'Medicine Hat, Canada', lat: 50.0405, lon: -110.6765 }); onPeriod(2001, end < 2001 ? new Date().getUTCFullYear() - 1 : end) }}>Medicine Hat</button></div>
+      </div>
+      <div className="vegetation-actions"><button type="button" className="secondary-button" disabled={!validPeriod || loading || end < 2001} onClick={loadVegetation}><Icon name="leaf" />{matchingImport ? 'Recalculate imported NDVI' : `Load NDVI · ${Math.max(2001, start)}–${end}`}</button><label className="secondary-button vegetation-import"><Icon name="download" />Import NDVI CSV<input type="file" accept=".csv,text/csv" aria-label="Import ORNL filtered and scaled NDVI CSV" onChange={importCsv} disabled={!validPeriod} /></label></div>
+      {!matchingImport && start < 2001 && end >= 2001 && <p className="vegetation-period-note">MODIS starts in 2001. The download will use 2001–{end}.</p>}
+      {end < 2001 && <p className="vegetation-period-note">Choose a period from 2001 onward. <button type="button" className="text-button" onClick={() => onPeriod(2001, satelliteEnd)}>Use 2001–{satelliteEnd}</button></p>}
+      <details className="vegetation-access-notes"><summary>Source & import details <Icon name="chevron" /></summary><p>NASA MOD13Q1 observations are sampled from the original NDVI and quality assets through Planetary Computer. One native MODIS pixel is used at this point. Quality failures remain gaps; no values are reconstructed from map colors.</p><p>Import the original filtered_scaled_250m_16_days_NDVI.csv export for this point. Coordinates, scaling and quality gaps are checked; export tools may require Earthdata Login. <a href="https://modis.ornl.gov/data.html" target="_blank" rel="noreferrer">Open ORNL exports <Icon name="external" /></a></p></details>
+      {matchingImport && <p className="vegetation-import-note">Imported: {matchingImport.filename}. <button type="button" className="text-button" onClick={() => { importedFile.current = null; setImported(null); setVegetationIntent(''); setMessage('Imported NDVI removed from this workspace.') }}>Use NASA API</button></p>}
+      {imported && !matchingImport && <p className="vegetation-import-note">The saved import belongs to another point or period. Return to its coordinates or import a matching CSV.</p>}
+      {importError && <p role="alert" className="form-error">{importError}</p>}
+    </div>}
+    {!validPeriod ? <p className="form-error">Choose a valid period above.</p> : loading ? <div className="relationship-loading" role="status">
+      <Icon name="refresh" /><div><strong>{waitingForFirstBatch ? 'Loading NASA MODIS…' : satelliteComplete ? 'Finishing paired records…' : loadingSatellite ? 'Downloading MODIS records…' : 'Loading records…'}</strong>
+        <p>{waitingForFirstBatch ? `Waiting for the first year: ${firstBatchYear}.` : satelliteComplete ? 'MODIS records received; matching rainfall.' : loadingSatellite ? `${progress.completed} of ${progress.total} years received.` : 'Matching both variables to the selected point and period.'}</p>
+        {loadingSatellite && <p className="relationship-load-detail" aria-live="off">{elapsed}s elapsed · {progress.completed} of {progress.total} batches complete. Each batch includes several NASA requests.{elapsed >= 20 && progress.completed === 0 ? ' You can cancel and retry, or import an ORNL CSV.' : ''}</p>}
+      </div><button type="button" className="text-button" onClick={stop}>Cancel</button>
+    </div> : cancelled ? <p className="relationship-cancelled" role="status">Loading cancelled. <button type="button" className="text-button" onClick={() => retry()}>Try again</button></p> : error ? <div className="relationship-error" role="alert"><p className="relationship-error-label">{mode === 'vegetation' ? 'Download failed' : 'Couldn’t load records'}</p><p>{error}</p><button type="button" className="secondary-button" onClick={() => retry()}>Retry <Icon name="refresh" /></button></div> : null}
     {current && <>
       {analysisState.key === analysisKey && analysisState.busy && <p role="status" className="relationship-status">Pairing calendar months and removing the selected effects…</p>}
       {analysisError && <div role="alert" className="relationship-error"><p>{analysisError}</p><button type="button" className="secondary-button" onClick={() => setRevision(value => value + 1)}>Retry analysis</button></div>}

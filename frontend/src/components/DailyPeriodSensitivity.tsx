@@ -48,7 +48,7 @@ export default function DailyPeriodSensitivity({ data, metric, locationName, com
   return <details className={`daily-period-sensitivity${compact ? ' compact' : ''}`} open={open} onToggle={event => setOpen(event.currentTarget.open)}>
     <summary>Compare fitted periods <Icon name="chevron" /></summary>
     <div className="daily-period-content" aria-busy={busy}>
-      <p className="overline">{locationName} · {definition.title}</p><h3>Does the conclusion depend on the period?</h3><p>The full selected record and available starts in 1991 and 2001 use the same end year. These fixed windows use the annual values already loaded above.</p>
+      <p>{locationName} · {definition.title}. The full record and available starts in 1991 and 2001 share an end year.</p>
       {busy ? <p role="status">Comparing predefined periods…</p> : error ? <div role="alert"><p>{error}</p><button type="button" className="secondary-button" onClick={() => setRetry(value => value + 1)}>Retry period analysis <Icon name="refresh" /></button></div> : result && <>
         <p className="daily-period-family">Holm correction across {result.family_size} tests: four indices × {result.periods.length} {result.periods.length === 1 ? 'period' : 'periods'} at this point. Main-chart badges use a separate four-index family.</p>
         <div className="daily-period-cards">{result.periods.map(period => {

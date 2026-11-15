@@ -27,7 +27,7 @@ export default function DailyWeather({ location, start, end, validPeriod, select
 
   useEffect(() => {
     setMetric(selection.metric)
-    setYear(end)
+    setYear(Math.max(start, Math.min(end, selection.year ?? end)))
     if (selection.autoLoad) load()
   }, [selection])
   useEffect(() => setMessage(''), [location.lat, location.lon, start, end])
@@ -48,14 +48,15 @@ export default function DailyWeather({ location, start, end, validPeriod, select
   const hasData = current && current.sources.length > 0
   const spell = selected?.longest_dry_spell
   return <section className="daily-weather" id="daily-extremes" aria-labelledby="daily-heading" aria-busy={busy}>
-    <div className="support-section-heading"><div><p className="overline">Daily NASA POWER records</p><h2 id="daily-heading">Hot days. Cold nights. Days without rain.</h2><p>{location.name} · {start || '—'}–{end || '—'} · Four annual indices from daily maxima, minima and precipitation.</p></div><a className="secondary-button" href="#analysis-settings">Change place or period <Icon name="pin" /></a></div>
+    <h2 id="daily-heading" className="sr-only">Daily weather</h2>
+    <p className="daily-record-summary">{location.name} · {start || '—'}–{end || '—'}</p>
     {!validPeriod ? <p className="form-error">Choose a valid period above to load daily records.</p> : <>
       {busy ? <div className="daily-loading" role="status"><div><strong>Loading daily records…</strong><span>{progress.years} / {end - start + 1} years received</span></div><progress value={progress.completed} max={progress.total || 1} aria-label="Daily download progress" /><p>Daily records are downloaded in cached five-year batches. You can stop loading or change the selected place.</p><button type="button" className="secondary-button" onClick={stop}>Stop loading</button></div>
-        : !hasData && <div className="daily-intro"><Icon name="globe" /><div><h3>Count the days that a monthly average cannot show.</h3><p>{changed ? 'The place or period has changed. Load daily data for this selection.' : 'Load the selected daily record to inspect hot days, frost days, warm-night proxies and dry spells. The first load may take longer; saved daily responses are reused.'}</p><button type="button" className="secondary-button" onClick={() => load()}>Load daily data <Icon name="arrow" /></button></div></div>}
+        : !hasData && <div className="daily-intro"><Icon name="globe" /><div><p>{changed ? 'The place or period changed. Load its daily record.' : 'Load hot days, frost days, warm-night proxies and dry spells for this place.'}</p><button type="button" className="secondary-button" onClick={() => load()}>Load daily data <Icon name="arrow" /></button></div></div>}
       {!busy && fatalError && <p className="form-error" role="alert">{fatalError}</p>}
       {!busy && current && current.failures.length > 0 && <div className="daily-failures" role="alert"><strong>{current.failures.length} daily {current.failures.length === 1 ? 'batch is' : 'batches are'} unavailable.</strong><p>Received records are retained. Unavailable years remain gaps and are never replaced by monthly data.</p><details><summary>Show unavailable periods</summary>{current.failures.map(item => <p key={item.start}>{item.start}–{item.end}: {item.message}</p>)}</details><button type="button" className="secondary-button" onClick={() => load()}>Retry missing batches <Icon name="refresh" /></button></div>}
       {hasData && <>
-        <div className="daily-workspace"><div className="daily-plot-panel"><p className="overline">{selectedMetric.rule}</p><h3>{selectedMetric.question}</h3><p className="daily-record-summary">{current.years.length} / {end - start + 1} years received · select a metric and a year.</p>
+        <div className="daily-workspace"><div className="daily-plot-panel"><p className="daily-record-summary">{selectedMetric.rule} · {current.years.length} / {end - start + 1} years received</p>
           <YearBarChart points={Array.from({ length: end - start + 1 }, (_, index) => {
             const year = start + index
             return { year, value: current.years.find(item => item.year === year)?.[metric].value ?? null }

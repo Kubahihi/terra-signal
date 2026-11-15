@@ -14,7 +14,7 @@ export default function DailyTrendPanel({ result, metric, locationName, start, e
   const evidence = dailyEvidence(metric, selected)
   const warnings = selected?.warnings.filter(note => note !== evidence.conclusion) ?? []
   return <div className="daily-trends" aria-busy={loading} aria-labelledby="daily-trends-heading">
-    <div className="daily-trends-heading"><div><p className="overline">Annual trends · {locationName} · {start}–{end}</p><h3 id="daily-trends-heading">Which changes stand out from year-to-year variation?</h3><p>Compare all four indices. Selecting a year above highlights an observation; the fitted period stays {start}–{end}.</p></div><span className="daily-family-note">Four tests · Holm correction · 5% level</span></div>
+    <div className="daily-trends-heading"><h3 id="daily-trends-heading">Trends · {start}–{end}<span className="sr-only"> · {locationName}</span></h3><span className="daily-family-note">Four tests · Holm correction · 5% level</span></div>
     {loading ? <p role="status">Estimating trends from complete annual indices…</p>
       : error ? <div className="daily-trend-error" role="alert"><p>{error}</p><button type="button" className="secondary-button" onClick={onRetry}>Retry trend analysis <Icon name="refresh" /></button></div>
       : result && <>

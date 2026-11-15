@@ -19,7 +19,7 @@ export default function TrendEvidence({ result, variable, loading = false }: {
       <div className="metric"><p>95% confidence interval</p><strong className="interval">{analysis?.ci95_per_decade ? analysis.ci95_per_decade.map(value => formatRate(value)).join(' to ') : '—'}</strong><span className="metric-unit">{unit} / decade</span></div>
     </div>
     <div className="evidence" aria-live="polite">
-      <div className="evidence-heading"><h3>What is changing?</h3><span>{analysis?.p_value != null ? `p ${analysis.p_value < 0.001 ? '< 0.001' : `= ${analysis.p_value.toPrecision(3)}`}` : 'p unavailable'}</span></div>
+      <div className="evidence-heading"><span className="evidence-label">Trend</span><span>{analysis?.p_value != null ? `p ${analysis.p_value < 0.001 ? '< 0.001' : `= ${analysis.p_value.toPrecision(3)}`}` : 'p unavailable'}</span></div>
       {result && <span className={`evidence-badge ${evidence.state}`}>{evidence.label}</span>}
       <p>{result ? evidence.conclusion : loading ? 'Loading observations and estimating the trend…' : 'Choose a valid period and load observations to explore the evidence.'}</p>
       {analysis?.ci95_per_decade && <p className="interval-explanation">{analysis.ci95_per_decade[0] <= 0 && analysis.ci95_per_decade[1] >= 0

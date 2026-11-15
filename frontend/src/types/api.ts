@@ -105,7 +105,7 @@ export type DailyResponse = DailySource & {
 }
 export type DailyRange = { start: number; end: number }
 export type DailyQuery = DailyRange & { lat: number; lon: number }
-export type DailySelection = { metric: DailyMetric; autoLoad: boolean }
+export type DailySelection = { metric: DailyMetric; autoLoad: boolean; year?: number }
 export type DailyDataset = DailyQuery & {
   daily: DailyRecord[]
   years: DailyYear[]

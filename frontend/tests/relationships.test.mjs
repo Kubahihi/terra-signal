@@ -88,8 +88,8 @@ test('vegetation batches preserve the oldest source date and reject footprint or
     const query = { lat: 48.85, lon: 16.85, start: 2001, end: 2010 }
     const data = await getVegetation(query, false, new AbortController().signal, (...args) => progress.push(args))
     assert.equal(data.retrieved_at, '2026-10-01T00:00:00Z')
-    assert.deepEqual(progress, [[1, 2], [2, 2]])
-    assert.equal(data.sources.length, 2)
+    assert.deepEqual(progress, Array.from({ length: 10 }, (_, i) => [i + 1, 10]))
+    assert.equal(data.sources.length, 10)
     for (const changes of [{ collections: ['006'] }, { pixel_size_m: 250 }, { nrows: 7 }, { spatial_support: 'Another rectangle' }]) {
       globalThis.fetch = async url => new Response(JSON.stringify(report(url, changes)))
       await assert.rejects(getVegetation(query, false, new AbortController().signal, () => {}), /different spatial footprints or MODIS collections/)

@@ -22,6 +22,8 @@ MODIS_URL = "https://modis.ornl.gov/rst/api/v1/MOD13Q1/subset"
 MODIS_DOCS = "https://modis.ornl.gov/data/modis_webservice.html"
 NDVI_BAND = "250m_16_days_NDVI"
 QUALITY_BAND = "250m_16_days_pixel_reliability"
+REQUEST_DEADLINE_SECONDS = 20
+READ_TIMEOUT_SECONDS = 15
 _slots = asyncio.Semaphore(2)
 
 
@@ -116,12 +118,37 @@ def normalize_subset(query: VegetationQuery, dates: list[date], saved: SavedPayl
 
 async def _download(query: VegetationQuery, dates: list[date]) -> SavedPayload:
     # ORNL allows at most ten composite dates in one global subset request.
-    async with _slots:
-        async with httpx.AsyncClient(timeout=httpx.Timeout(30, connect=8), follow_redirects=True,
-                                     headers={"Accept": "application/json", "User-Agent": "TerraSignal/0.1 NASA Space Apps"}) as client:
-            response = await client.get(MODIS_URL, params=parameters(query, dates))
-            response.raise_for_status()
-            return SavedPayload(response.json(), str(response.url), datetime.now(timezone.utc).isoformat(), "live")
+    # Include semaphore queueing in the deadline. Cancel/retry from the browser
+    # must not leave another request waiting indefinitely behind a stalled call.
+    async with asyncio.timeout(REQUEST_DEADLINE_SECONDS):
+        async with _slots:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(READ_TIMEOUT_SECONDS, connect=5), follow_redirects=True,
+                                         headers={"Accept": "application/json", "User-Agent": "TerraSignal/0.1 NASA Space Apps"}) as client:
+                response = await client.get(MODIS_URL, params=parameters(query, dates))
+                response.raise_for_status()
+                return SavedPayload(response.json(), str(response.url), datetime.now(timezone.utc).isoformat(), "live")
+
+
+def _unavailable_message(cause: Exception) -> str:
+    if isinstance(cause, TimeoutError):
+        reason = f"The satellite request exceeded its {REQUEST_DEADLINE_SECONDS}-second time limit."
+    elif isinstance(cause, httpx.TimeoutException):
+        reason = "NASA ORNL did not respond before the network timeout."
+    elif isinstance(cause, httpx.HTTPStatusError):
+        status = cause.response.status_code
+        if status == 429:
+            reason = "NASA ORNL is busy or rate-limiting requests (HTTP 429)."
+        elif status >= 500:
+            reason = f"NASA ORNL is temporarily unavailable (HTTP {status})."
+        else:
+            reason = f"NASA ORNL rejected this MODIS request (HTTP {status})."
+    elif isinstance(cause, httpx.HTTPError):
+        reason = "NASA ORNL could not be reached."
+    elif isinstance(cause, ProviderError):
+        reason = "NASA ORNL returned an unusable MODIS data or quality record."
+    else:
+        reason = "NASA ORNL returned an unreadable response."
+    return reason + " No matching saved NDVI is available for this point and period. Try again later or import an original ORNL filtered NDVI CSV."
 
 
 async def _fetch_batch(query: VegetationQuery, dates: list[date], refresh: bool):
@@ -147,13 +174,13 @@ async def _fetch_batch(query: VegetationQuery, dates: list[date], refresh: bool)
         normalized = normalize_subset(query, dates, saved)
         _write_cache(path, saved)
         return normalized, saved, False
-    except (httpx.HTTPError, ValueError, ProviderError):
+    except (httpx.HTTPError, TimeoutError, ValueError, ProviderError) as cause:
         if cached:
             try:
                 return normalize_subset(query, dates, cached), cached, True
             except ProviderError:
                 pass
-        raise ProviderError("NASA ORNL MODIS data are unavailable and no valid saved satellite response covers this batch. Retry later; weather data cannot replace NDVI.", 503) from None
+        raise ProviderError(_unavailable_message(cause), 503) from None
 
 
 async def fetch_vegetation(query: VegetationQuery, refresh: bool = False) -> VegetationResponse:
@@ -164,7 +191,16 @@ async def fetch_vegetation(query: VegetationQuery, refresh: bool = False) -> Veg
     collected = [await _fetch_batch(query, chunks[0], refresh)]
     # Only two requests are outstanding at once, including across API callers.
     for offset in range(1, len(chunks), 2):
-        collected.extend(await asyncio.gather(*(_fetch_batch(query, dates, refresh) for dates in chunks[offset:offset + 2])))
+        pending = [asyncio.create_task(_fetch_batch(query, dates, refresh)) for dates in chunks[offset:offset + 2]]
+        try:
+            collected.extend(await asyncio.gather(*pending))
+        except BaseException:
+            # Do not leave a sibling downloading after its record has failed or
+            # been cancelled; a subsequent retry can reuse completed cache files.
+            for task in pending:
+                task.cancel()
+            await asyncio.gather(*pending, return_exceptions=True)
+            raise
     values, grids, collections, sources = {}, set(), set(), []
     stale = False
     for (records, grid, versions), saved, fallback in collected:

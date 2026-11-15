@@ -13,11 +13,11 @@ export default function RelationshipCharts({ result }: { result: RelationshipRes
   if (!point) return <div className="relationship-empty">No matching observations are available for these months.</div>
   return <>
     <div className="relationship-charts">
-      <article className="relationship-chart-card"><p className="overline">Matched original observations</p><h3>Follow the two records through time.</h3><p className="relationship-chart-note">Each line has its own vertical scale. Y is shown at its paired X date; its actual month is listed when you inspect a point.</p>
+      <article className="relationship-chart-card"><h3>Time series</h3><p className="relationship-chart-note">Separate vertical scales. Y is shown at its paired X date; inspect a point for the actual month.</p>
         <MiniSeries pairs={pairs} axis="x" name={result.x_name} unit={result.x_unit} selected={selectedIndex} onSelect={setSelected} annual={result.month !== null} />
         <MiniSeries pairs={pairs} axis="y" name={result.y_name} unit={result.y_unit} selected={selectedIndex} onSelect={setSelected} annual={result.month !== null} />
       </article>
-      <article className="relationship-chart-card"><p className="overline">Seasonality removed{result.detrended ? ' · trend removed' : ''}</p><h3>Do the departures move together?</h3><ScatterPlot result={result} selected={selectedIndex} onSelect={setSelected} /><p className="relationship-chart-note">Select a dot or use Left/Right, Home or End to inspect a pair. The points show the adjusted values used for the descriptive correlation.</p></article>
+      <article className="relationship-chart-card"><h3>Adjusted pairs</h3><p className="relationship-chart-note">Seasonal cycle removed{result.detrended ? '; linear trends removed' : ''}.</p><ScatterPlot result={result} selected={selectedIndex} onSelect={setSelected} /><p className="relationship-chart-note">Select a dot or use Left/Right, Home or End. These adjusted values enter the descriptive correlation.</p></article>
     </div>
     <div className="relationship-point-detail" aria-live="polite"><div><span>Selected pair</span><strong>{point.x_date.slice(0, 7)} → {point.y_date.slice(0, 7)}</strong></div><div><span>{result.x_name} · original / adjusted</span><strong>{format(point.x_raw, result.x_unit)} / {format(point.x, result.x_unit)} <small>{result.x_unit}</small></strong></div><div><span>{result.y_name} · original / adjusted</span><strong>{format(point.y_raw, result.y_unit)} / {format(point.y, result.y_unit)} <small>{result.y_unit}</small></strong></div></div>
   </>

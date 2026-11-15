@@ -22,11 +22,11 @@ export function getSoil(query: { lat: number; lon: number; start: number; end: n
 export async function getVegetation(query: { lat: number; lon: number; start: number; end: number }, refresh: boolean, signal: AbortSignal, onProgress: (completed: number, total: number) => void): Promise<VegetationData> {
   const first = Math.max(2001, query.start)
   if (first > query.end) throw new Error('MODIS vegetation data are available from 2001 in this workspace. Choose a later period.')
-  const total = Math.ceil((query.end - first + 1) / 5)
+  const total = query.end - first + 1
   const reports: VegetationData[] = []
-  for (let start = first; start <= query.end; start += 5) {
+  for (let start = first; start <= query.end; start++) {
     signal.throwIfAborted()
-    const end = Math.min(start + 4, query.end)
+    const end = start
     const params = new URLSearchParams({ lat: String(query.lat), lon: String(query.lon), start: String(start), end: String(end), refresh: String(refresh) })
     const report = await request<VegetationData>(`/api/vegetation?${params}`, signal)
     if (report.latitude !== query.lat || report.longitude !== query.lon || report.start !== start || report.end !== end || report.product !== 'MOD13Q1' || report.unit !== 'NDVI') throw new Error('Vegetation observations do not match this place, period or product.')

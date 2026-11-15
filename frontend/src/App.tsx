@@ -6,7 +6,6 @@ import TrendEvidence from './components/TrendEvidence'
 import InvestigationStarter from './components/InvestigationStarter'
 import DailyExampleStarter from './components/DailyExampleStarter'
 import LocationComparison from './components/LocationComparison'
-import DataResources from './components/DataResources'
 import LocalQuestions from './components/LocalQuestions'
 import DailyWeather from './components/DailyWeather'
 import DailyComparison from './components/DailyComparison'
@@ -20,17 +19,31 @@ import type { CalendarSelection, DailyMetric, DailySelection, SeriesResponse, Va
 
 const lastYear = new Date().getUTCFullYear() - 1
 const Relationships = lazy(() => import('./components/Relationships'))
+const TrendAtlas = lazy(() => import('./components/TrendAtlas'))
+const DataResources = lazy(() => import('./components/DataResources'))
 const variableLabels: Record<Variable, string> = { T2M: 'Air temperature', PRECTOTCORR: 'Precipitation' }
 const workspaces = [
-  { id: 'explore', label: 'Explore', icon: 'map', title: 'A closer look at a changing Earth.', description: 'Find a place on the map and explore its long-term record.' },
-  { id: 'calendar', label: 'Calendar', icon: 'calendar', title: 'Every season tells a story.', description: 'Explore individual months, seasons and departures from the reference.' },
-  { id: 'daily', label: 'Daily weather', icon: 'sun', title: 'Look beyond the average.', description: 'Follow hot days, frost, warm nights and stretches without rain.' },
-  { id: 'compare', label: 'Compare places', icon: 'compare', title: 'One question. Two places.', description: 'Compare the same period and variable at two points on Earth.' },
-  { id: 'relationships', label: 'Connections', icon: 'relationships', title: 'Explore the connections.', description: 'Connect heat, rainfall, soil wetness and vegetation over time.' },
-  { id: 'methods', label: 'Data & methods', icon: 'info', title: 'Follow the evidence.', description: 'Understand the observations, the analysis and its limitations.' },
+  { id: 'atlas', label: 'Map', icon: 'globe' },
+  { id: 'explore', label: 'Place', icon: 'map' },
+  { id: 'calendar', label: 'Calendar', icon: 'calendar' },
+  { id: 'daily', label: 'Days', icon: 'sun' },
+  { id: 'compare', label: 'Compare', icon: 'compare' },
+  { id: 'relationships', label: 'Connections', icon: 'relationships' },
+  { id: 'methods', label: 'Data', icon: 'info' },
 ] as const
 type Workspace = typeof workspaces[number]['id']
 type ComparisonView = 'daily' | 'monthly'
+const analysisWorkspaceIds = ['explore', 'calendar', 'daily', 'compare'] as const
+type AnalysisWorkspace = typeof analysisWorkspaceIds[number]
+const primaryWorkspaces = [
+  { id: 'atlas', label: 'Map', icon: 'globe' },
+  { id: 'analysis', label: 'Explore', icon: 'relationships' },
+  { id: 'relationships', label: 'Connections', icon: 'leaf' },
+  { id: 'methods', label: 'Data', icon: 'info' },
+] as const
+type PrimaryWorkspace = typeof primaryWorkspaces[number]['id']
+const compactAnalysisLabels: Record<AnalysisWorkspace, string> = { explore: 'Place', calendar: 'Calendar', daily: 'Daily', compare: 'Compare' }
+function isAnalysisWorkspace(value: Workspace): value is AnalysisWorkspace { return analysisWorkspaceIds.some(id => id === value) }
 
 function routeFromHash() {
   const hash = window.location.hash.slice(1)
@@ -41,14 +54,16 @@ function routeFromHash() {
     'daily-place-comparison': 'compare', 'location-comparison': 'compare', 'comparison-heading': 'compare',
     'data-resources': 'methods', 'correlations': 'relationships',
   }
-  const workspace = workspaces.find(item => item.id === hash.replace(/^workspace-/, ''))?.id ?? aliases[hash] ?? 'explore'
+  const workspace = workspaces.find(item => item.id === hash.replace(/^workspace-/, ''))?.id ?? aliases[hash] ?? 'atlas'
   return { workspace, hash, comparison: hash === 'location-comparison' || hash === 'comparison-heading' ? 'monthly' as const : 'daily' as const }
 }
 
 export default function App() {
   const [workspace, setWorkspace] = useState<Workspace>(() => routeFromHash().workspace)
+  const [atlasOpened, setAtlasOpened] = useState(() => routeFromHash().workspace === 'atlas')
   const [connectionsOpened, setConnectionsOpened] = useState(() => routeFromHash().workspace === 'relationships')
   const [scrollTarget, setScrollTarget] = useState(() => routeFromHash().hash)
+  const [guidedExamplesOpen, setGuidedExamplesOpen] = useState(() => routeFromHash().hash === 'daily-examples')
   const [comparisonView, setComparisonView] = useState<ComparisonView>(() => routeFromHash().comparison)
   const [location, setLocation] = useState<Location>(exampleLocations[0])
   const [variable, setVariable] = useState<Variable>('T2M')
@@ -71,22 +86,28 @@ export default function App() {
   const [dailyYear, setDailyYear] = useState(lastYear)
   const refreshRequested = useRef(false)
   const requestCache = useRef(new Map<string, SeriesResponse>())
+  const lastAnalysis = useRef<AnalysisWorkspace>(isAnalysisWorkspace(workspace) ? workspace : 'explore')
 
   const validPeriod = Number.isInteger(start) && Number.isInteger(end) && start >= 1981 && end <= lastYear && start <= end
   const dailyRecord = useDailyRecord({ lat: location.lat, lon: location.lon, start, end }, validPeriod)
   const selectedDailyYear = Math.max(start, Math.min(end, dailyYear))
   const activeWorkspace = workspaces.find(item => item.id === workspace)!
+  const primaryWorkspace: PrimaryWorkspace = isAnalysisWorkspace(workspace) ? 'analysis' : workspace
+  const monthlyActive = workspace !== 'atlas'
   const matches = result && result.latitude === location.lat && result.longitude === location.lon && result.variable === variable && result.start === start && result.end === end
   const current = matches && !error && !loading ? result : null
   const activeInvestigation = investigation && investigation.location.lat === location.lat && investigation.location.lon === location.lon && investigation.variable === variable && investigation.start === start && investigation.end === end ? investigation : null
   const pickLocation = useCallback((next: Location) => { setLocation(next); setCoordinateError('') }, [])
 
   useEffect(() => { if (workspace === 'relationships') setConnectionsOpened(true) }, [workspace])
+  useEffect(() => { if (workspace === 'atlas') setAtlasOpened(true) }, [workspace])
 
   useEffect(() => {
     function followHash() {
       const route = routeFromHash()
+      if (route.hash === 'daily-examples') setGuidedExamplesOpen(true)
       setWorkspace(route.workspace)
+      if (isAnalysisWorkspace(route.workspace)) lastAnalysis.current = route.workspace
       setScrollTarget(route.hash)
       if (route.workspace === 'compare') {
         setComparisonEnabled(true)
@@ -106,21 +127,36 @@ export default function App() {
     return () => window.cancelAnimationFrame(frame)
   }, [workspace, scrollTarget])
 
+  function workspaceDestination(next: Workspace) { return next === 'compare' ? comparisonView === 'daily' ? 'daily-place-comparison' : 'location-comparison' : next }
+
   function navigate(next: Workspace, target?: string) {
-    const destination = target ?? (next === 'compare' ? comparisonView === 'daily' ? 'daily-place-comparison' : 'location-comparison' : next)
+    const destination = target ?? workspaceDestination(next)
+    if (destination === 'daily-examples') setGuidedExamplesOpen(true)
     setWorkspace(next)
+    if (isAnalysisWorkspace(next)) lastAnalysis.current = next
     setScrollTarget(destination)
     if (next === 'compare') setComparisonEnabled(true)
     if (window.location.hash !== `#${destination}`) window.location.hash = destination
   }
 
-  function navigateWithKeys(event: KeyboardEvent<HTMLAnchorElement>, index: number) {
+  function navigatePrimary(next: PrimaryWorkspace) { navigate(next === 'analysis' ? lastAnalysis.current : next) }
+
+  function navigatePrimaryWithKeys(event: KeyboardEvent<HTMLAnchorElement>, index: number) {
     const key = event.key
-    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(key)) return
+    if (event.altKey || event.ctrlKey || event.metaKey || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(key)) return
     event.preventDefault()
-    const next = key === 'Home' ? 0 : key === 'End' ? workspaces.length - 1 : (index + (key === 'ArrowRight' ? 1 : -1) + workspaces.length) % workspaces.length
-    document.getElementById(`tab-${workspaces[next].id}`)?.focus()
-    navigate(workspaces[next].id)
+    const next = key === 'Home' ? 0 : key === 'End' ? primaryWorkspaces.length - 1 : (index + (key === 'ArrowRight' ? 1 : -1) + primaryWorkspaces.length) % primaryWorkspaces.length
+    document.getElementById(`primary-${primaryWorkspaces[next].id}`)?.focus()
+    navigatePrimary(primaryWorkspaces[next].id)
+  }
+
+  function navigateAnalysisWithKeys(event: KeyboardEvent<HTMLAnchorElement>, index: number) {
+    const key = event.key
+    if (event.altKey || event.ctrlKey || event.metaKey || !['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(key)) return
+    event.preventDefault()
+    const next = key === 'Home' ? 0 : key === 'End' ? analysisWorkspaceIds.length - 1 : (index + (key === 'ArrowRight' ? 1 : -1) + analysisWorkspaceIds.length) % analysisWorkspaceIds.length
+    document.getElementById(`tab-${analysisWorkspaceIds[next]}`)?.focus()
+    navigate(analysisWorkspaceIds[next])
   }
 
   useEffect(() => {
@@ -132,6 +168,7 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    if (!monthlyActive) { setLoading(false); return }
     if (!validPeriod) { setLoading(false); return }
     const controller = new AbortController()
     setLoading(true)
@@ -156,7 +193,7 @@ export default function App() {
       }
     }, 350)
     return () => { window.clearTimeout(timer); controller.abort() }
-  }, [location.lat, location.lon, variable, start, end, refreshId, validPeriod])
+  }, [location.lat, location.lon, variable, start, end, refreshId, validPeriod, monthlyActive])
 
   function applyCoordinates(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -217,6 +254,23 @@ export default function App() {
     navigate('compare', 'daily-place-comparison')
   }
 
+  function openAtlasComparison(a: Location, b: Location, metric: DailyMetric, year: number) {
+    pickLocation(a)
+    setComparisonLocation(b)
+    setStart(exampleAnalysis.start)
+    setEnd(exampleAnalysis.end)
+    setVariable('T2M')
+    setComparisonEnabled(true)
+    setMapTarget('b')
+    setInvestigation(null)
+    setDailyMetric(metric)
+    setDailyYear(year)
+    setDailySelection({ metric, autoLoad: true, year })
+    setComparisonView('daily')
+    setActionMessage(`Atlas comparison opened: ${a.name} and ${b.name}, ${exampleAnalysis.start}–${exampleAnalysis.end}.`)
+    navigate('compare', 'daily-place-comparison')
+  }
+
   function chooseOnMap(point: 'a' | 'b') {
     setComparisonEnabled(true)
     setMapTarget(point)
@@ -235,26 +289,26 @@ export default function App() {
     setActionMessage('Monthly data downloaded with source details.')
   }
 
-  return <div className="app-shell">
+  return <div className={`app-shell${workspace === 'atlas' ? ' is-map-workspace' : ''}`}>
     <a className="skip-link" href={`#workspace-${workspace}`} onClick={event => { event.preventDefault(); const panel = document.getElementById(`workspace-${workspace}`); panel?.focus({ preventScroll: true }); panel?.scrollIntoView({ block: 'start' }) }}>Skip to workspace</a>
     <header className="topbar workspace-header">
       <div className="workspace-brand-row">
-        <a className="brand" href="#explore" aria-label="TerraSignal home" onClick={event => { event.preventDefault(); navigate('explore') }}><Icon name="globe" />TerraSignal</a>
-        <span className="project-label">Earth system explorer</span>
-        <div className="source-status" role="status"><span className={`status-dot ${service}`} />{service === 'online' ? 'NASA analysis online' : service === 'checking' ? 'Connecting to data' : 'Data service unavailable'}</div>
+        <a className="brand" href="#atlas" aria-label="TerraSignal home" onClick={event => { event.preventDefault(); navigate('atlas') }}><Icon name="globe" />TerraSignal</a>
       </div>
-      <nav aria-label="Workspace navigation"><div className="workspace-tabs" role="tablist" aria-label="Analysis workspaces">
-        {workspaces.map((item, index) => <a key={item.id} id={`tab-${item.id}`} role="tab" href={`#${item.id === 'compare' ? comparisonView === 'daily' ? 'daily-place-comparison' : 'location-comparison' : item.id}`} aria-selected={workspace === item.id} aria-controls={`workspace-${item.id}`} tabIndex={workspace === item.id ? 0 : -1} onKeyDown={event => navigateWithKeys(event, index)} onClick={event => { event.preventDefault(); navigate(item.id) }}><Icon name={item.icon} /><span>{item.label}</span></a>)}
+      <nav aria-label="Workspace navigation"><div className="workspace-tabs" role="tablist" aria-label="Main workspaces">
+        {primaryWorkspaces.map((item, index) => <a key={item.id} id={`primary-${item.id}`} role="tab" href={`#${workspaceDestination(item.id === 'analysis' ? lastAnalysis.current : item.id)}`} aria-selected={primaryWorkspace === item.id} aria-controls={`workspace-${item.id}`} tabIndex={primaryWorkspace === item.id ? 0 : -1} onKeyDown={event => navigatePrimaryWithKeys(event, index)} onClick={event => { event.preventDefault(); navigatePrimary(item.id) }}><Icon name={item.icon} /><span>{item.label}</span></a>)}
       </div></nav>
+      <div className="source-status" role="status" aria-label="Analysis service status"><span className={`status-dot ${workspace === 'atlas' ? 'online' : service}`} />{workspace === 'atlas' ? 'Saved data' : service === 'online' ? 'Connected' : service === 'checking' ? 'Connecting…' : 'Offline'}</div>
     </header>
 
     <main id="workspace-start">
-      <div className="page-heading">
-        <div><p className="workspace-eyebrow">{activeWorkspace.label}</p><h1>{activeWorkspace.title}</h1><p>{activeWorkspace.description}</p></div>
-        {workspace !== 'methods' && <div className="selection-summary"><span><Icon name="pin" />{location.name}</span><span>{start || '—'}–{end || '—'}</span></div>}
-      </div>
+      <nav className="analysis-navigation" aria-label="Analysis views" hidden={primaryWorkspace !== 'analysis'}><div role="tablist" aria-label="Analysis views">{analysisWorkspaceIds.map((id, index) => {
+        const item = workspaces.find(item => item.id === id)!
+        return <a key={id} id={`tab-${id}`} role="tab" aria-label={item.label} href={`#${workspaceDestination(id)}`} aria-selected={workspace === id} aria-controls={`workspace-${id}`} tabIndex={workspace === id ? 0 : -1} onKeyDown={event => navigateAnalysisWithKeys(event, index)} onClick={event => { event.preventDefault(); navigate(id) }}><Icon name={item.icon} /><span className="analysis-tab-full" aria-hidden="true">{item.label}</span><span className="analysis-tab-compact" aria-hidden="true">{compactAnalysisLabels[id]}</span></a>
+      })}</div></nav>
+      {workspace !== 'atlas' && <h1 className="sr-only">{activeWorkspace.label}</h1>}
 
-      <div hidden={workspace === 'methods'}>
+      <div hidden={workspace === 'methods' || workspace === 'atlas'}>
       <div className="filter-bar" id="analysis-settings" aria-label="Analysis settings">
         <div className="variable-control" hidden={workspace === 'daily' || workspace === 'relationships' || workspace === 'compare' && comparisonView === 'daily'}><span className="control-label">Variable</span><div className="segmented" aria-label="Earth system variable">
           <button type="button" aria-pressed={variable === 'T2M'} onClick={() => setVariable('T2M')}>Temperature</button>
@@ -272,15 +326,22 @@ export default function App() {
         {workspace !== 'explore' && <button type="button" className="secondary-button choose-on-map" onClick={() => navigate('explore', 'location-map-panel')}><Icon name="map" />Choose on map</button>}
       </div>
       {!validPeriod && <p className="form-error" role="alert">Choose whole years between 1981 and {lastYear}, with the start before the end.</p>}
-      <div className="variable-context" hidden={workspace === 'daily' || workspace === 'relationships' || workspace === 'compare' && comparisonView === 'daily'}><Icon name="info" /><p><strong>{variable} · {variableInfo[variable].title}.</strong> {variableInfo[variable].definition} <a href="#data-resources">Understand the dataset</a></p></div>
+      <details className="variable-help" hidden={workspace === 'daily' || workspace === 'relationships' || workspace === 'compare' && comparisonView === 'daily'}><summary>About {variableInfo[variable].title.toLowerCase()} <Icon name="chevron" /></summary><p><strong>{variable}.</strong> {variableInfo[variable].definition} <a href="#data-resources">Data details</a></p></details>
       </div>
-      {activeInvestigation && workspace !== 'methods' && <aside className="investigation-prompt" aria-label="Investigation guide"><strong>{activeInvestigation.question}</strong><p>{activeInvestigation.prompt}</p><div className="guide-actions"><a href={activeInvestigation.focus === 'daily' ? '#daily-extremes' : '#local-questions'}>View the investigation <Icon name="arrow" /></a><button type="button" className="text-button" onClick={() => setInvestigation(null)}>Dismiss guide</button></div></aside>}
+      {activeInvestigation && workspace !== 'methods' && workspace !== 'atlas' && <aside className="investigation-prompt" aria-label="Investigation guide"><strong>{activeInvestigation.question}</strong><p>{activeInvestigation.prompt}</p><div className="guide-actions"><a href={activeInvestigation.focus === 'daily' ? '#daily-extremes' : '#local-questions'}>View the investigation <Icon name="arrow" /></a><button type="button" className="text-button" onClick={() => setInvestigation(null)}>Dismiss guide</button></div></aside>}
 
+      <section className="workspace-panel" id="workspace-atlas" role="tabpanel" aria-labelledby="primary-atlas" tabIndex={0} hidden={workspace !== 'atlas'}>
+        {(atlasOpened || workspace === 'atlas') && <Suspense fallback={<p className="workspace-loading" role="status">Loading the trend map…</p>}><TrendAtlas visible={workspace === 'atlas'} onOpenAnalysis={openAtlasComparison} /></Suspense>}
+      </section>
+
+      <div id="workspace-analysis" role="tabpanel" aria-labelledby="primary-analysis" hidden={primaryWorkspace !== 'analysis'}>
       <section className="workspace-panel" id="workspace-explore" role="tabpanel" aria-labelledby="tab-explore" tabIndex={0} hidden={workspace !== 'explore'}>
-      <DailyExampleStarter onStart={startDailyExample} />
+      <details className="guided-examples" open={guidedExamplesOpen} onToggle={event => setGuidedExamplesOpen(event.currentTarget.open)}>
+        <summary>Guided examples <Icon name="chevron" /></summary>
+        <div><DailyExampleStarter onStart={startDailyExample} /><InvestigationStarter onStart={startInvestigation} /></div>
+      </details>
       <div className="explorer">
         <section className="map-panel" id="location-map-panel" aria-label="Choose a location">
-          <div className="section-heading"><h2>Explore the map</h2><span>Scroll to zoom · drag to explore</span></div>
           <div className="map-comparison-controls">{comparisonEnabled ? <><div className="segmented" aria-label="Choose which map point to move"><button type="button" aria-pressed={mapTarget === 'a'} onClick={() => setMapTarget('a')}>Point A</button><button type="button" aria-pressed={mapTarget === 'b'} onClick={() => setMapTarget('b')}>Point B</button></div><span>Click the map to move point {mapTarget.toUpperCase()}.</span><button type="button" className="text-button" onClick={toggleComparison}>Finish comparison</button></> : <><span>Click to select a place.</span><button type="button" className="secondary-button" onClick={toggleComparison}>Compare two places <Icon name="pin" /></button></>}</div>
           <MapPicker visible={workspace === 'explore'} location={location} onSelect={pickLocation} comparisonLocation={comparisonEnabled ? comparisonLocation : undefined} onComparisonSelect={setComparisonLocation} activePoint={mapTarget} />
           <div className="map-caption"><span><span className="map-key" />{comparisonEnabled ? `A · ${location.name}` : 'Selected point'}</span><span>{comparisonEnabled ? `B · ${comparisonLocation.name}` : 'NASA model grid cell · not a weather station'}</span></div>
@@ -319,7 +380,6 @@ export default function App() {
       </div>
 
       <div className="workspace-note"><Icon name="info" /><p>Local patterns, long-term context. Each selection represents a NASA model grid cell. Statistical evidence describes the selected record; it does not explain the cause.</p></div>
-      <InvestigationStarter onStart={startInvestigation} />
       </section>
       <section className="workspace-panel" id="workspace-calendar" role="tabpanel" aria-labelledby="tab-calendar" tabIndex={0} hidden={workspace !== 'calendar'}>
       <LocalQuestions location={location} variable={variable} start={start} end={end} validPeriod={validPeriod} selection={calendarSelection} />
@@ -332,11 +392,12 @@ export default function App() {
         <div hidden={comparisonView !== 'daily'}><DailyComparison standalone enabled={comparisonEnabled} onToggle={toggleComparison} onChooseMapPoint={chooseOnMap} location={location} comparisonLocation={comparisonLocation} onSelect={setComparisonLocation} primary={dailyRecord} metric={dailyMetric} onMetric={setDailyMetric} year={selectedDailyYear} onYear={setDailyYear} start={start} end={end} validPeriod={validPeriod} /></div>
         <div hidden={comparisonView !== 'monthly'}><LocationComparison standalone enabled={comparisonEnabled} onToggle={toggleComparison} location={location} comparisonLocation={comparisonLocation} onSelect={setComparisonLocation} primary={current} primaryLoading={loading} variable={variable} start={start} end={end} validPeriod={validPeriod} /></div>
       </section>
-      <section className="workspace-panel" id="workspace-relationships" role="tabpanel" aria-labelledby="tab-relationships" tabIndex={0} hidden={workspace !== 'relationships'}>
+      </div>
+      <section className="workspace-panel" id="workspace-relationships" role="tabpanel" aria-labelledby="primary-relationships" tabIndex={0} hidden={workspace !== 'relationships'}>
         {(connectionsOpened || workspace === 'relationships') && <Suspense fallback={<p className="workspace-loading" role="status">Loading connections…</p>}><Relationships visible={workspace === 'relationships'} location={location} start={start} end={end} validPeriod={validPeriod} record={dailyRecord} onSelect={pickLocation} onPeriod={(first, last) => { setStart(first); setEnd(last) }} /></Suspense>}
       </section>
-      <section className="workspace-panel" id="workspace-methods" role="tabpanel" aria-labelledby="tab-methods" tabIndex={0} hidden={workspace !== 'methods'}>
-      <DataResources />
+      <section className="workspace-panel" id="workspace-methods" role="tabpanel" aria-labelledby="primary-methods" tabIndex={0} hidden={workspace !== 'methods'}>
+        {workspace === 'methods' && <Suspense fallback={<p className="workspace-loading" role="status">Loading data and methods…</p>}><DataResources /></Suspense>}
       </section>
     </main>
     <footer><span>TerraSignal</span><span>NASA Space Apps Challenge 2026</span><a href="https://power.larc.nasa.gov/" target="_blank" rel="noreferrer">Data from NASA POWER <Icon name="external" /></a></footer>

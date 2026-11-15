@@ -218,6 +218,69 @@ family, missing inference, actual fitted spans and original source provenance.
 
 ## Spatial comparison and guided investigations
 
+The compact interface has four primary destinations: Map, Explore, Connections
+and Data. Explore keeps Place, Calendar, Days and Compare as secondary
+views, preserving their shared state and existing deep links. Map is one
+workbench with a collapsible A/B comparison; place shortcuts, uncertainty,
+coverage and sources are disclosed on demand rather than repeated beside the
+map. Short functional controls replace repeated headline/tagline blocks.
+This reorganization does not change an index definition or statistical family.
+
+The opening Map visualizes the fixed ten-point, four-index 1981–2025
+archive. **Year**, **Vs usual** and **Trend** are separate views. New links
+default to Vs usual; explicit legacy Year/Trend links keep their view. Moving
+the year never refits or relabels a 45-year trend. Counts require complete annual
+coverage, retain true zeros, and leave unavailable years as gaps.
+
+For point p, index m and year y, Vs usual is:
+
+`departure(p, m, y) = annual_count(p, m, y) - mean(annual_count(p, m, 1991:2020))`
+
+All 30 reference years must have exact complete annual values. A single missing
+reference year withholds the whole reference and every departure using it;
+there is no averaging over 29 years. Each year has equal weight. Leap-year
+counts are retained as annual counts, without daily-rate conversion, day
+weighting or normalization to 365 days. A missing selected-year count also
+withholds its departure. This reference is separate from Calendar's monthly
+temperature normals and from the matched-cohort references in Connections.
+
+In Vs usual, map markers, A/B chart values and A-minus-B use the same departures.
+Thus the difference compares deviations from each place's own reference, not
+their raw annual count difference. Year uses raw exact counts throughout;
+Trend uses full-record rates, with the accompanying chart labelled as annual
+counts. Annual counts, departures and their arithmetic differences are
+descriptive; no significance or uncertainty claim is inferred from their color.
+
+For each index/view, the marker scale is shared across all ten points and stays
+fixed across all animation years. Circle area above a small selectable center
+is proportional to magnitude. A blue–neutral–red scale encodes signed trend
+rates or departures; raw counts use a sequential light-to-red scale. Point
+colors and gradient legend use the same scalar interpolation and fixed domain.
+A dashed outline marks unresolved/unavailable trend inference only. Missing
+values retain a separate neutral treatment. The A/B chart uses common vertical
+limits for both points, with symmetric positive/negative limits for departures
+and calendar-year spacing that preserves gaps. The atlas does not interpolate
+between these sampled cells or claim administrative-region averages or global
+coverage for the weather trends. Obsolete `atlasLayer` query parameters are
+removed; there is no vegetation imagery layer on Map.
+
+Atlas significance uses `p_holm_40` and `significant_across_scan` from the fixed
+40-test scan, rather than the nested per-point four-test result. Individual 95%
+intervals are not simultaneous, so an interval can exclude zero while the
+40-test adjusted result remains unresolved. A constant observed series retains
+a zero rate with unavailable inference. Comparing two displayed rates or annual
+counts does not test a difference between their trends.
+
+The browser parser checks annual coverage, independently recomputes each OLS
+line, and checks the full Holm family before displaying the archive. The
+independent backend archive audit additionally recomputes HAC(1) slope variance
+with centered calendar years, Bartlett weights, n/(n−2) correction and Student-t
+reference, verifying all 40 intervals and raw p-values. A local optional test
+recounts the 36 original cached NASA batches for Prague, Medicine Hat, Brno and
+Athens (65,744 daily records and 720 annual metric values). This raw recount
+does not cover the other six points; it is skipped when the ignored cache is
+unavailable. Source retrieval dates and analysis creation time remain distinct.
+
 The one-click finding cards are references to the saved 2026-11-14 analysis of
 ten predefined points over 1981–2025. Their displayed rates retain the original
 complete annual observations and Holm adjustment across all 40 point/index
@@ -394,12 +457,35 @@ point. Different spatial supports, land cover, cloud/snow-dependent missingness,
 temporal compositing and selected reference periods can affect the coefficient.
 These limits remain explicit even when both source chains are NASA products.
 
-The public ORNL service returned 503 during integration verification; this is
-an observed availability limit, not a claim that the product is permanently
-unavailable. A failed live request may use only a valid saved original subset
-with its original retrieval metadata. No synthetic or weather-derived NDVI is
-used. The browser also accepts the documented ORNL filtered/scaled pixel CSV
-format, including the supported land-cover-mask variant.
+The public ORNL service returned 503 during integration verification, and a
+recent ten-second connectivity probe timed out. Successful live numeric subset
+retrieval remains unverified. These are observed availability limits, not a
+claim that the product is permanently unavailable. A failed live request may
+use only a valid saved original subset with its original retrieval metadata.
+Completed original responses are cached independently, so a later failed
+request does not discard earlier cached subsets. No synthetic, image-derived
+or weather-derived NDVI is used. The browser also accepts the documented ORNL
+filtered/scaled pixel CSV format, including the land-cover-mask variant.
+
+Each application batch requests one to five complete years. The provider splits
+each year into at most ten composite dates per upstream call: three smaller
+requests per complete year, or 15 for a five-year batch. Up to two requests run
+concurrently under a shared semaphore. An upstream HTTP call has a 20-second
+deadline that includes waiting for this semaphore; its network read timeout is
+15 seconds and connect timeout is five seconds. The 20-second limit is not a
+deadline for a whole five-year batch or the complete browser download. A slow
+batch can therefore take longer while still completing individual calls within
+their limits. On a failed group, unfinished sibling requests are cancelled;
+already validated cached responses remain reusable.
+
+The browser reports contact with ORNL before the first complete five-year batch,
+elapsed seconds, completed batches and the later rainfall-pairing stage. Batch
+progress is not a count of individual upstream calls or downloaded composites.
+Cancellation stops the active browser request and allows retry. Selecting the
+NDVI mode alone does not change the period. Explicit Load NDVI can change a
+pre-2001 start to 2001 for an API request when the end is 2001 or later; an
+earlier end requires a period change. CSV imports keep their requested period
+and undergo the same quality and missing-month checks, without this API clamp.
 
 For imports, already-scaled numeric pixels in -0.2..1 are retained and `F` is
 treated as a rejected pixel. The same 50% composite and complete-month schedule

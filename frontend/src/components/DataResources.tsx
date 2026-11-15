@@ -2,7 +2,7 @@ import Icon from './Icon'
 
 const groups = [
   {
-    title: 'Find more Earth science variables',
+    title: 'More datasets',
     intro: 'Explore other records and regions in the challenge’s data portals.',
     items: [
       { title: 'Giovanni', organization: 'NASA', url: 'https://giovanni.earthdata.nasa.gov/', description: 'Select geophysical variables and generate maps or time series.' },
@@ -12,7 +12,7 @@ const groups = [
     ],
   },
   {
-    title: 'Explore methods and examples',
+    title: 'Methods and examples',
     intro: 'Use these references to investigate assumptions and interpret uncertainty.',
     items: [
       { title: 'KNMI Climate Explorer', organization: 'KNMI', url: 'https://climexp.knmi.nl/', description: 'Explore climate time series, gridded fields and relationships between records.' },
@@ -22,7 +22,7 @@ const groups = [
     ],
   },
   {
-    title: 'Discover Canadian observations',
+    title: 'Canadian data',
     intro: 'The challenge also points to water, radar and ecosystem resources.',
     items: [
       { title: 'RADARSAT Constellation Mission data', organization: 'Canadian Space Agency', url: 'https://donnees-data.asc-csa.gc.ca/en/dataset/rcm', description: 'Radar observations for maritime, disaster and ecosystem monitoring.' },
@@ -36,13 +36,13 @@ const groups = [
 
 export default function DataResources() {
   return <section className="resources-section" id="data-resources" aria-labelledby="resources-heading">
-    <div className="support-section-heading"><div><p className="overline">Follow the evidence</p><h2 id="resources-heading">Data, methods & further exploration.</h2><p>Know what you are measuring, where it came from and what a trend can tell you.</p></div></div>
+    <h2 id="resources-heading" className="sr-only">Data and methods</h2>
     <div className="connected-source">
       <div><span className="dataset-label">Weather & soil data used in TerraSignal</span><h3>NASA POWER · MERRA-2</h3><p>Daily and monthly temperature and precipitation records come from a reanalysis: a model that combines observations with a representation of the atmosphere. Connections also uses monthly root-zone soil wetness (GWETROOT), a dimensionless model fraction rather than volumetric water content. Weather and soil share the same modelling system. Each selected point represents a model grid cell, rather than a weather station or an average of an entire city or country.</p>
         <p>The result panel and CSV preserve the original request, retrieval date and whether the response was live, cached or a saved snapshot. Saved observations are labelled; they are never presented as a new NASA retrieval.</p>
         <div className="source-links"><a href="https://power.larc.nasa.gov/docs/services/api/temporal/monthly/" target="_blank" rel="noreferrer">Monthly API & coverage <Icon name="external" /></a><a href="https://power.larc.nasa.gov/docs/services/api/temporal/daily/" target="_blank" rel="noreferrer">Daily API & time standards <Icon name="external" /></a><a href="https://power.larc.nasa.gov/docs/methodology/data/sources_meteorology/" target="_blank" rel="noreferrer">MERRA-2 data provenance <Icon name="external" /></a></div>
       </div>
-      <div className="reading-results"><h3>Read the result, not just the slope.</h3><dl>
+      <div className="reading-results"><h3>Reading results</h3><dl>
         <div><dt>Rate of change</dt><dd>The fitted change per year or decade, in the variable’s units. It is an estimate for the chosen period, not a forecast.</dd></div>
         <div><dt>95% confidence interval</dt><dd>Uncertainty in the estimated rate under this model. An interval containing zero does not resolve the trend at the 5% level.</dd></div>
         <div><dt>p-value</dt><dd>Under a zero-trend hypothesis and the model assumptions, how unusual a test statistic at least this extreme would be. It is not the probability that there is no change.</dd></div>

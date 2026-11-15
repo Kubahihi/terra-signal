@@ -16,7 +16,36 @@ Prague and Medicine Hat include attributed original NASA snapshots for outages.
 The interface reports source, retrieval date, data origin, units, and limitations.
 The statistics are exploratory and still need the team's scientific review.
 
-The **One-click examples** cards in Explore open Brno × Athens hot-day comparisons, frost-day
+The opening **Map** displays the saved 1981–2025 NASA analysis at ten sampled
+grid cells. Its three views are **Year** (exact annual counts), **Vs usual**
+(the selected year's count minus that place's 1991–2020 mean) and **Trend**
+(the full-record fitted rate). New map links default to Vs usual; existing
+links that explicitly select Year or Trend retain that view.
+
+Vs usual requires all 30 exact annual reference values, with equal weight for
+each year, including leap years. One missing reference year withholds the
+departure. Map markers, the comparison chart and A minus B all show the same
+quantity for the chosen view. Color and size scales stay fixed across places
+and animation years. Annual counts and departures are descriptive and receive
+no significance label; Trend keeps its fixed 40-test Holm family and separately
+labelled individual 95% intervals. The points describe surrounding model cells,
+not administrative regions or an interpolated global trend surface.
+
+The map, year slider and animation use the same local archive, so changing
+places or years needs no new NASA download. A/B comparison, place shortcuts,
+uncertainty, coverage and source notes are available on demand. The interface
+uses short functional labels rather than repeated page headlines and taglines.
+There is no decorative vegetation overlay on Map.
+
+An independent numerical audit in `backend/tests/test_atlas_archive.py` checks
+all 450 archived annual rows, 40 fitted lines, HAC intervals, p-values and the
+40-test correction without calling the production regression function. Where
+the ignored original NASA cache is available, it also recounts 65,744 daily
+observations at Prague, Medicine Hat, Brno and Athens. The remaining six points'
+raw daily observations are not covered by that optional local recount.
+
+The collapsed **Guided examples** section in Explore → Place contains the
+one-click findings and three guided investigations. Its cards open Brno × Athens hot-day comparisons, frost-day
 declines near Brno/Berlin, and warm-night increases near Athens/Sydney. Each click
 sets both points, 1981–2025, the relevant daily metric and highlighted year 2025,
 opens comparison and loads the records. Reopening a card restores these settings
@@ -25,12 +54,16 @@ after manual exploration. The displayed reference rates are from the saved
 The complete analysis and NASA source URLs can be downloaded under the cards;
 live chart badges retain their four-test correction per point.
 
-The workspace is organized into Explore, Calendar, Daily weather, Compare places,
-Connections, and Data & methods tabs. The location and period are shared, and switching tabs
-preserves chart selections, loaded daily records and map zoom. Links and browser
-Back/Forward open the corresponding workspace.
+The header has four primary destinations: **Map**, **Explore**, **Connections**
+and **Data**. Explore retains Place, Calendar, Days and Compare as secondary
+views, including arbitrary-coordinate exploration and live retrieval. Location
+and period remain shared across those views. Switching destinations preserves
+loaded records, chart selections and map zoom; the Explore destination returns
+to its most recently used view. Existing deep links and browser Back/Forward
+continue to open the corresponding view. Map links also retain A/B, index,
+year and view. Obsolete `atlasLayer` query parameters are removed.
 
-The light map workspace supports selecting any point by click, dragging the marker,
+The Explore → Place map supports selecting any point by click, dragging the marker,
 or entering coordinates. Scroll the wheel or double-click to zoom, drag to pan,
 or expand the map and press Escape to return. Selecting a point, variable, or valid period updates the
 analysis automatically; obsolete browser requests are cancelled. The interactive
@@ -48,7 +81,7 @@ reference independently of the selected analysis window. Precipitation totals
 use actual calendar-month lengths, including leap days. Missing months remain
 gaps. Daily indices are computed from a separate daily NASA POWER connection.
 
-**Daily weather** loads the selected period explicitly, or when starting a daily
+**Explore → Days** loads the selected period explicitly, or when starting a daily
 guided question. Progress, cancellation and retry are available for cached
 five-year batches. Select one of four index cards and move its year slider to
 inspect counts, coverage and dry-run dates. Exact annual indices require all
@@ -63,7 +96,7 @@ internal gaps, constant or exact-line records, and fewer than five nonzero years
 withhold inference. Trend cards, a fitted line and a separate trend CSV retain
 the distinction between an unresolved trend and an absence of change.
 
-**Compare fitted periods** in Daily weather and each daily comparison point
+**Compare fitted periods** in Days and each daily comparison point
 checks how the selected index depends on the fitted window. The full loaded
 interval and available starts in 1991/2001 share an end year. Each shows its rate,
 individual interval, actual coverage and significance corrected across all four
@@ -74,7 +107,7 @@ different slopes alone are not a test of a difference between periods.
 
 Click **Compare two places** on the map, select **Point A** or **Point B**, then
 click anywhere to move that point. Both labelled markers can also be dragged.
-**View daily comparison** opens two records with a synchronized year/metric,
+**Explore → Compare** opens two records with a synchronized year/metric,
 the same requested period, and a shared vertical scale. Counts, trend rates,
 individual intervals, adjusted p-values and coverage remain separate per point.
 The annual table reports A minus B only for two exact values; the comparison CSV
@@ -87,7 +120,7 @@ existing independent chart scales. At either resolution, individual zero-trend
 tests do not constitute a test of the difference between the two places.
 
 Variable definitions, p-value/interval explanations and the challenge's NASA,
-NOAA, KNMI and Canadian resources are available in **Data & methods**. NASA POWER
+NOAA, KNMI and Canadian resources are available in **Data**. NASA POWER
 is the connected provider; the other resources open external tools and are not
 presented as implemented data integrations. The NASA non-endorsement and
 third-party data-use notice is included.
@@ -116,8 +149,19 @@ five-year batches. Only good-quality pixels and complete composite-start-month
 coverage enter the monthly proxy. The smaller MODIS footprint is labelled
 separately from the weather grid. South Moravia and Medicine Hat are location
 shortcuts, not preloaded satellite findings. During implementation ORNL requests
-returned 503/timeouts, so a successful live satellite retrieval remains unverified.
+returned 503/timeouts; a recent ten-second connectivity probe also timed out,
+so a successful live **numeric ORNL subset retrieval** remains unverified.
 The interface reports outages without fabricating vegetation data.
+
+Choosing the NDVI mode does not change the selected period. Clicking **Load
+NDVI** for the API can move a pre-2001 start to 2001; CSV imports retain their
+validated requested period. Loading reports initial contact, elapsed seconds
+and completed five-year batches. Each such batch contains up to 15 smaller
+ORNL requests, so zero completed batches does not mean no request has started.
+Each upstream HTTP request has a 20-second deadline including queueing and a
+15-second read timeout. These are per-request bounds, not a total download or
+five-year-batch deadline. Completed original subset responses stay cached for
+retry when a later request fails.
 
 An original ORNL `filtered_scaled_250m_16_days_NDVI.csv` export can also be imported
 locally. The parser checks product, collection, scaled values, coordinates and

@@ -47,9 +47,8 @@ export default function LocationComparison({ enabled, onToggle, location, compar
   }, [enabled, comparisonLocation.lat, comparisonLocation.lon, variable, start, end, validPeriod, samePoint, retry])
 
   return <section className="comparison-section" id="location-comparison" aria-labelledby="comparison-heading">
-    <div className="support-section-heading"><div><p className="overline">Where is it changing?</p><h2 id="comparison-heading">One variable. Two places.</h2><p>A trend in one place does not tell the whole story. Compare the same period in another model grid cell.</p></div>
-      {!standalone && <button type="button" className="secondary-button" onClick={onToggle} aria-expanded={enabled} aria-controls="location-comparison-content">{enabled ? 'Hide comparison' : 'Compare places'}<Icon name="chevron" /></button>}
-    </div>
+    <h2 id="comparison-heading" className={standalone ? 'sr-only' : undefined}>Monthly comparison</h2>
+    {!standalone && <button type="button" className="secondary-button" onClick={onToggle} aria-expanded={enabled} aria-controls="location-comparison-content">{enabled ? 'Hide comparison' : 'Compare places'}<Icon name="chevron" /></button>}
     {enabled && <div id="location-comparison-content">
       <div className="comparison-controls"><label htmlFor="comparison-location">Compare with</label><select id="comparison-location" value={comparisonLocation.id ?? 'pinned'} onChange={event => { const next = exampleLocations.find(item => item.id === event.target.value); if (next) onSelect(next) }}>
         {!comparisonLocation.id && <option value="pinned">Pinned map point</option>}
@@ -59,12 +58,12 @@ export default function LocationComparison({ enabled, onToggle, location, compar
         : !validPeriod ? <p className="form-error">Choose a valid period above to compare locations.</p>
         : <>
           <div className="comparison-grid">
-            <article className="comparison-card"><p className="overline">Selected map point</p><h3>{location.name}</h3><p className="coordinates">{coordinates(location.lat, location.lon)}</p>
+            <article className="comparison-card"><h3>A · {location.name}</h3><p className="coordinates">{coordinates(location.lat, location.lon)}</p>
               <SeriesChart key={`primary-${location.lat}-${location.lon}-${variable}-${start}-${end}`} result={primary} loading={primaryLoading} />
               <TrendEvidence result={primary} variable={variable} loading={primaryLoading} />
               {primary && <p className="comparison-source">{originLabel(primary.data_origin)} · <a href={primary.source_url} target="_blank" rel="noreferrer">Original NASA response <Icon name="external" /></a><br />Retrieved {new Date(primary.retrieved_at).toLocaleString()}</p>}
             </article>
-            <article className="comparison-card" aria-busy={loading}><p className="overline">Comparison point</p><h3>{comparisonLocation.name}</h3><p className="coordinates">{coordinates(comparisonLocation.lat, comparisonLocation.lon)}</p>
+            <article className="comparison-card" aria-busy={loading}><h3>B · {comparisonLocation.name}</h3><p className="coordinates">{coordinates(comparisonLocation.lat, comparisonLocation.lon)}</p>
               {error ? <div className="comparison-error" role="alert"><p>{error}</p><button type="button" className="secondary-button" onClick={() => setRetry(value => value + 1)}>Try again</button></div>
                 : <SeriesChart key={`comparison-${comparisonLocation.lat}-${comparisonLocation.lon}-${variable}-${start}-${end}`} result={current} loading={loading} />}
               <TrendEvidence result={current} variable={variable} loading={loading} />

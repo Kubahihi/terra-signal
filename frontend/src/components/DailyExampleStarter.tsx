@@ -27,7 +27,7 @@ export default function DailyExampleStarter({ onStart }: { onStart: (example: Da
     } finally { setDownloading(false) }
   }
   return <section className="daily-example-starter" id="daily-examples" aria-labelledby="daily-examples-heading">
-    <div className="daily-examples-heading"><div><p className="overline">One-click examples · {exampleAnalysis.start}–{exampleAnalysis.end}</p><h2 id="daily-examples-heading">Changes worth a closer look.</h2><p>Open a saved finding. Both places, the metric, the period and the highlighted year are set for you.</p></div><a className="text-button" href="#analysis-settings">Explore your own points <Icon name="pin" /></a></div>
+    <div className="daily-examples-heading"><h2 id="daily-examples-heading">Saved examples</h2><a className="text-button" href="#analysis-settings">Choose a place <Icon name="pin" /></a></div>
     <div className="daily-example-options">{dailyExamples.map(example => <button type="button" className={`daily-example-button${example.featured ? ' featured' : ''}`} key={example.id} onClick={() => onStart(example)}>
       <span className="daily-example-type">{example.featured ? 'Featured comparison · hot days' : example.metric === 'frost_days' ? 'Daily Tmin < 0 °C' : 'Daily Tmin > 20 °C · night proxy'}</span>
       <strong className="daily-example-title">{example.title}</strong><span className="daily-example-description">{example.description}</span>

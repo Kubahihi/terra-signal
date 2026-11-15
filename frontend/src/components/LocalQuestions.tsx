@@ -70,9 +70,10 @@ export default function LocalQuestions({ location, variable, start, end, validPe
   }
 
   return <section className="local-questions" id="local-questions" aria-labelledby="local-heading" aria-busy={loading}>
-    <div className="support-section-heading"><div><p className="overline">Questions about your place</p><h2 id="local-heading">Look beyond the yearly average.</h2><p>{location.name} · {start || '—'}–{end || '—'} · {temperature ? 'Temperature and departures from 1991–2020' : 'Precipitation totals from monthly rates'}</p></div><a href="#analysis-settings" className="secondary-button">Change place or period <Icon name="pin" /></a></div>
+    <h2 id="local-heading" className="sr-only">Calendar</h2>
+    <p className="calendar-method">{location.name} · {start || '—'}–{end || '—'} · {temperature ? 'Reference: 1991–2020' : 'Precipitation totals from monthly rates'}</p>
     {!validPeriod ? <p className="form-error" role="status">Choose a valid period above to explore years and seasons.</p>
-      : error ? <div className="calendar-error" role="alert"><h3>The local investigation could not be loaded.</h3><p>{error}</p><button type="button" className="secondary-button" onClick={refresh}>Try again <Icon name="refresh" /></button></div>
+      : error ? <div className="calendar-error" role="alert"><p>{error}</p><button type="button" className="secondary-button" onClick={refresh}>Try again <Icon name="refresh" /></button></div>
       : <>
         <div className="calendar-controls">
           <div className="segmented calendar-seasons" aria-label="Year or calendar season">{[
@@ -81,7 +82,7 @@ export default function LocalQuestions({ location, variable, start, end, validPe
           {temperature && <div className="segmented calendar-view" aria-label="Temperature view"><button type="button" aria-pressed={view === 'anomaly'} onClick={() => setView('anomaly')}>Departure</button><button type="button" aria-pressed={view === 'values'} onClick={() => setView('values')}>Temperature</button></div>}
         </div>
         <div className="calendar-workspace">
-          <div className="calendar-plot-panel"><div className="calendar-plot-heading"><div><p className="overline">{period?.label ?? 'Selected calendar period'}</p><h3>{temperature ? displayView === 'anomaly' ? 'How unusual was that year?' : 'How is this part of the year changing?' : 'How much precipitation fell?'}</h3></div><span>{unit}</span></div>
+          <div className="calendar-plot-panel"><div className="calendar-plot-heading"><h3>{period?.label ?? 'Selected period'}</h3><span>{unit}</span></div>
             {period ? <CalendarChart period={period} view={displayView} unit={unit} selectedYear={selectedYear} onSelect={setYear} /> : <div className="calendar-loading" role="status">Loading the monthly record{temperature ? ' and fixed reference' : ''}…</div>}
             <div className="calendar-months" aria-label="Select a calendar month">{calendarMonths.map((month, index) => {
               const id = `m${String(index + 1).padStart(2, '0')}` as CalendarPeriodId

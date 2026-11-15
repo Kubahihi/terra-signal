@@ -1,3 +1,4 @@
+import asyncio
 import copy
 import unittest
 from datetime import date, datetime, timedelta, timezone
@@ -90,6 +91,62 @@ class VegetationNormalizationTests(unittest.TestCase):
 
 
 class VegetationCacheTests(unittest.IsolatedAsyncioTestCase):
+    async def test_download_deadline_includes_waiting_for_an_upstream_slot(self):
+        days = nasa_ndvi.batches(query())[0]
+        with patch.object(nasa_ndvi, "_slots", asyncio.Semaphore(0)), patch.object(nasa_ndvi, "REQUEST_DEADLINE_SECONDS", 0.01), patch.object(nasa_ndvi.httpx, "AsyncClient") as client:
+            with self.assertRaises(TimeoutError):
+                await asyncio.wait_for(nasa_ndvi._download(query(), days), timeout=1)
+        client.assert_not_called()
+
+    async def test_time_limit_and_upstream_status_have_actionable_errors_without_cache_writes(self):
+        days = nasa_ndvi.batches(query())[0]
+        url = httpx.Request("GET", nasa_ndvi.MODIS_URL)
+        for cause, detail in (
+            (TimeoutError(), "20-second time limit"),
+            (httpx.ReadTimeout("upstream stalled"), "network timeout"),
+            (httpx.HTTPStatusError("upstream", request=url, response=httpx.Response(503, request=url)), "HTTP 503"),
+            (httpx.HTTPStatusError("upstream", request=url, response=httpx.Response(429, request=url)), "HTTP 429"),
+        ):
+            with self.subTest(detail=detail), patch.object(nasa_ndvi, "_read_cache", return_value=None), patch.object(nasa_ndvi, "_download", side_effect=cause), patch.object(nasa_ndvi, "_write_cache") as write:
+                with self.assertRaises(ProviderError) as error:
+                    await nasa_ndvi._fetch_batch(query(), days, False)
+                self.assertEqual(error.exception.status_code, 503)
+                self.assertIn(detail, str(error.exception))
+                self.assertIn("import an original ORNL filtered NDVI CSV", str(error.exception))
+                write.assert_not_called()
+
+    async def test_timeout_keeps_original_cached_values_and_retrieval_metadata(self):
+        days = nasa_ndvi.batches(query())[0]
+        original = saved(fixture(days), age=2)
+        with patch.object(nasa_ndvi, "_read_cache", return_value=original), patch.object(nasa_ndvi, "_download", side_effect=TimeoutError()):
+            _, result, stale = await nasa_ndvi._fetch_batch(query(), days, True)
+        self.assertTrue(stale)
+        self.assertEqual(result.retrieved_at, original.retrieved_at)
+        self.assertEqual(result.payload, original.payload)
+
+    async def test_a_failed_chunk_cancels_its_sibling_and_does_not_queue_more(self):
+        chunks = nasa_ndvi.batches(query())
+        sibling_started, sibling_cancelled = asyncio.Event(), asyncio.Event()
+
+        async def batch(request, dates, refresh):
+            if dates == chunks[0]:
+                original = saved(fixture(dates))
+                return nasa_ndvi.normalize_subset(request, dates, original), original, False
+            if dates == chunks[1]:
+                await sibling_started.wait()
+                raise ProviderError("ORNL unavailable", 503)
+            sibling_started.set()
+            try:
+                await asyncio.Event().wait()
+            finally:
+                sibling_cancelled.set()
+
+        with patch.object(nasa_ndvi, "_fetch_batch", side_effect=batch) as fetch:
+            with self.assertRaises(ProviderError):
+                await asyncio.wait_for(nasa_ndvi.fetch_vegetation(query()), timeout=1)
+        self.assertTrue(sibling_cancelled.is_set())
+        self.assertEqual(fetch.call_count, 3)
+
     async def test_good_fresh_original_avoids_upstream_and_stale_outage_keeps_retrieval(self):
         days = nasa_ndvi.batches(query())[0]
         original = saved(fixture(days))
