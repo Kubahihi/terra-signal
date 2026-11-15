@@ -2,13 +2,20 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query
 
-from ..schemas import DailyQuery, DailyResponse, DailyTrendRequest, DailyTrendsResponse
+from ..schemas import DailyPeriodsResponse, DailyQuery, DailyResponse, DailyTrendRequest, DailyTrendsResponse
 from ..services.nasa_daily import fetch_daily
 from ..services.daily_trends import analyze_daily_trends
+from ..services.daily_periods import analyze_daily_periods
 from ..services.nasa_power import ProviderError
 from .series import LAST_COMPLETE_YEAR
 
 router = APIRouter(prefix="/api", tags=["Daily weather indices"])
+
+
+@router.post("/daily/periods", response_model=DailyPeriodsResponse)
+def daily_periods(request: DailyTrendRequest) -> DailyPeriodsResponse:
+    """Compare prespecified subsets of the caller's complete annual indices."""
+    return analyze_daily_periods(request)
 
 
 @router.post("/daily/trends", response_model=DailyTrendsResponse)

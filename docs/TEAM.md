@@ -17,7 +17,7 @@ the response format. Use separate branches. Integrate small changes regularly.
 2. Real NASA data are now connected for both preset points and variables.
 3. Jakub verifies the graph against those same observations.
 4. Terka and Matej independently review the exploratory seasonal OLS/HAC method.
-5. The result cards are connected; improve explanation and review sensitivity to the chosen period.
+5. The result cards and daily period-sensitivity panel are connected; independently review interpretation and model assumptions.
 6. Verify two reproducible real examples, coverage warnings, and source references.
 7. Deploy, check public access, complete the project description and demo.
 

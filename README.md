@@ -63,6 +63,15 @@ internal gaps, constant or exact-line records, and fewer than five nonzero years
 withhold inference. Trend cards, a fitted line and a separate trend CSV retain
 the distinction between an unresolved trend and an absence of change.
 
+**Compare fitted periods** in Daily weather and each daily comparison point
+checks how the selected index depends on the fitted window. The full loaded
+interval and available starts in 1991/2001 share an end year. Each shows its rate,
+individual interval, actual coverage and significance corrected across all four
+indices and all displayed periods. It uses loaded annual values without another
+NASA download, opens on request, and exports every period/index with provenance.
+Short, incomplete and sparse records retain the daily model's safeguards;
+different slopes alone are not a test of a difference between periods.
+
 Click **Compare two places** on the map, select **Point A** or **Point B**, then
 click anywhere to move that point. Both labelled markers can also be dragged.
 **View daily comparison** opens two records with a synchronized year/metric,

@@ -336,6 +336,29 @@ footer a { display: flex; align-items: center; gap: 7px; margin-left: auto; }
 .daily-footer > div { display: flex; flex-wrap: wrap; gap: 9px; }
 .daily-footer .text-button .icon { width: 13px; height: 13px; margin-left: 4px; }
 .daily-fitted-line { stroke: #a26e3f; stroke-width: 2.5; stroke-dasharray: 7 4; pointer-events: none; }
+.daily-period-sensitivity { border-top: 1px solid var(--border); margin-top: 20px; }
+.daily-period-sensitivity > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; list-style: none; font-size: 12px; color: var(--accent); padding: 17px 0; }
+.daily-period-sensitivity > summary .icon { width: 14px; height: 14px; }
+.daily-period-content { padding: 5px 0 20px; }
+.daily-period-content > h3 { margin: 0 0 12px; font-size: 19px; line-height: 1.5; font-weight: 550; letter-spacing: -.4px; }
+.daily-period-content > p:not(.overline), .daily-period-method p { color: var(--muted); font-size: 11px; line-height: 1.85; margin: 10px 0; }
+.daily-period-content > p.daily-period-family { background: #edf2f5; border-radius: 4px; color: #5d7381; padding: 12px 15px; margin: 16px 0; }
+.daily-period-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 14px; }
+.daily-period-card { border: 1px solid var(--border); border-radius: 4px; padding: 19px; background: #fff; min-width: 0; }
+.daily-period-card h4 { font-size: 17px; font-weight: 550; color: #35576d; margin: 0 0 10px; }
+.daily-period-card p { font-size: 10px; line-height: 1.85; color: var(--muted); margin: 7px 0; }
+.daily-period-rate { display: flex; align-items: baseline; flex-wrap: wrap; gap: 7px; font-size: 29px; color: #314b5c; font-weight: 500; margin: 18px 0; letter-spacing: -.5px; }
+.daily-period-rate small { font-size: 10px; color: var(--muted); font-weight: 400; letter-spacing: 0; }
+.daily-period-interval { font-size: 15px; font-weight: 500; line-height: 1.5; color: #35576d; }
+.daily-period-card .evidence-badge { white-space: normal; line-height: 1.6; margin-top: 12px; font-size: 9px; }
+.daily-period-card p.daily-period-warning { color: #80694e; }
+.daily-period-method { margin: 18px 0; }
+.daily-period-sensitivity.compact .daily-period-cards { grid-template-columns: 1fr; }
+.daily-period-sensitivity.compact .daily-period-content > h3 { font-size: 16px; }
+@media (max-width: 600px) {
+  .daily-period-card { padding: 17px; }
+  .daily-period-content > h3 { font-size: 18px; }
+}
 .daily-example-starter { padding: 25px 0 22px; border-top: 1px solid var(--border); scroll-margin-top: 20px; }
 .daily-examples-heading { display: flex; align-items: start; justify-content: space-between; gap: 18px; margin-bottom: 20px; }
 .daily-examples-heading h2 { font-size: 23px; line-height: 1.4; font-weight: 550; letter-spacing: -.6px; margin: 0 0 8px; }

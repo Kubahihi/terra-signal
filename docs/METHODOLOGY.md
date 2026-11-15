@@ -192,6 +192,30 @@ warm-night counts retain their daily-minimum proxy interpretation.
 Implementation references: [statsmodels HAC inference](https://www.statsmodels.org/stable/generated/statsmodels.regression.linear_model.OLSResults.get_robustcov_results.html),
 [statsmodels Holm adjustment](https://www.statsmodels.org/stable/generated/statsmodels.stats.multitest.multipletests.html).
 
+### Period sensitivity of annual daily indices
+
+The optional period panel uses the full loaded interval and predefined starts in
+1991 and 2001 that fall strictly inside that record (or at its end). All windows
+share an end year and use only exact annual indices from the supplied dataset.
+This is a descriptive sensitivity check, without choosing windows in response
+to p-values or extrapolating a missing early/late record. The 20-year/80% guards,
+independent per-index completeness, missing-year spacing, and constant/sparse
+inference rules apply separately to every window.
+
+One Holm family contains all four indices across all included windows. Missing
+tests retain their slots with internal p=1 and publish null inference. For the
+default 1981–2025 record the family has 12 tests; a shorter source interval may
+support fewer predefined windows. This is a separate correction from the main
+chart's four tests at one point. Intervals remain individual 95% intervals, not
+simultaneous intervals. Overlapping windows are dependent; Holm does not require
+independent tests, but the underlying HAC p-values remain approximate.
+
+Different estimated rates or significance labels across windows do not by
+themselves test a change in slope. No between-period contrast, breakpoint search,
+causal claim or adjustment over other map points is made. Reusing loaded annual
+indices avoids another NASA request. Exports preserve the entire period/index
+family, missing inference, actual fitted spans and original source provenance.
+
 ## Spatial comparison and guided investigations
 
 The one-click finding cards are references to the saved 2026-11-14 analysis of
@@ -223,7 +247,8 @@ and no formal paired or spatial model of the difference between the slopes.
 
 Both points are evaluated with the same selected variable, period and model.
 Each is a separate model grid-cell record, not an administrative-area average.
-The two chart scales are independent and labelled. Testing each slope against
+Monthly chart scales are independent and labelled; daily comparison charts share
+their vertical limits. Testing each slope against
 zero does not test whether the two slopes differ; no between-location significance
 claim is made. A significant slope at one point and a nonsignificant slope at
 another does not itself establish a significant difference between them.

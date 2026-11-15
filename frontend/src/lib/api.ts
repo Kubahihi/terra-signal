@@ -1,4 +1,4 @@
-import type { CalendarResponse, DailyDataset, DailyQuery, DailyResponse, DailyTrendsResponse, HealthResponse, SeriesQuery, SeriesResponse } from '../types/api'
+import type { CalendarResponse, DailyDataset, DailyPeriodsResponse, DailyQuery, DailyResponse, DailyTrendsResponse, HealthResponse, SeriesQuery, SeriesResponse } from '../types/api'
 
 const baseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '')
 
@@ -40,6 +40,13 @@ export function getDaily(query: DailyQuery, refresh = false, signal?: AbortSigna
 
 export function getDailyTrends(data: DailyDataset, signal?: AbortSignal): Promise<DailyTrendsResponse> {
   return request<DailyTrendsResponse>('/api/daily/trends', signal, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ latitude: data.lat, longitude: data.lon, start: data.start, end: data.end, years: data.years }),
+  })
+}
+
+export function getDailyPeriods(data: DailyDataset, signal?: AbortSignal): Promise<DailyPeriodsResponse> {
+  return request<DailyPeriodsResponse>('/api/daily/periods', signal, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ latitude: data.lat, longitude: data.lon, start: data.start, end: data.end, years: data.years }),
   })

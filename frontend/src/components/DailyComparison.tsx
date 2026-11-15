@@ -7,6 +7,7 @@ import { coordinates, exampleLocations, type Location } from '../lib/locations'
 import { useDailyRecord, type DailyRecordState } from '../lib/useDailyRecord'
 import type { DailyMetric } from '../types/api'
 import { YearBarChart } from './CalendarChart'
+import DailyPeriodSensitivity from './DailyPeriodSensitivity'
 import Icon from './Icon'
 
 type Props = {
@@ -89,6 +90,7 @@ function PointCard({ label, location, record, metric, year, onYear, start, end, 
           <div className="daily-comparison-statistics"><div><span>Change / decade</span><strong>{analysis ? formatRate(analysis.slope_per_decade) : '—'}<small>days</small></strong></div><div><span>Individual 95% interval</span><strong>{analysis?.ci95_per_decade ? analysis.ci95_per_decade.map(formatRate).join(' to ') : '—'}</strong><small>days / decade</small></div></div>
           <div className="daily-comparison-evidence"><span className={`evidence-badge ${evidence.state}`}>{evidence.label}</span><span>Holm p {formatDailyP(analysis?.p_value_holm)}</span></div><p>{evidence.conclusion}</p><p>{result?.complete_years ?? '—'} / {end - start + 1} complete annual values{result?.first_year != null ? ` · fitted span ${result.first_year}–${result.last_year}` : ''}. {analysis?.method ?? 'At least 20 complete years and 80% coverage are required.'}</p>{result?.warnings.map((note, i) => <p className="daily-comparison-warning" key={i}>{note}</p>)}
         </>}</div>
+        <DailyPeriodSensitivity data={data} metric={metric} locationName={location.name} compact />
         {data.failures.length > 0 && <div className="daily-comparison-warning" role="alert"><p>{data.failures.length} batches unavailable; those years stay gaps.</p><button type="button" className="text-button" onClick={() => record.load()}>Retry point {label} missing batches</button></div>}
       </>}
     {data && <details className="daily-comparison-sources"><summary>Point {label} sources & coverage <Icon name="chevron" /></summary><div>{data.warnings.map((warning, i) => <p key={i}>{warning}</p>)}{data.failures.map(item => <p key={item.start}>{item.start}–{item.end}: {item.message}</p>)}{trends?.warnings.map((warning, i) => <p key={`trend-${i}`}>{warning}</p>)}<ul>{data.sources.map(source => <li key={source.start}><a href={source.source_url} target="_blank" rel="noreferrer">NASA daily {source.start}–{source.end} <Icon name="external" /></a><span>{originLabel(source.data_origin)} · retrieved {new Date(source.retrieved_at).toLocaleString()}</span></li>)}</ul></div></details>}

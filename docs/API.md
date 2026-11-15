@@ -201,6 +201,34 @@ are retained. Absent values and inference stay blank, distinct from true zero.
 Holm correction remains four tests per point; neither the arithmetic annual
 difference nor different significance labels is a between-location trend test.
 
+## `POST /api/daily/periods`
+
+Accepts the same validated `DailyTrendRequest` as `/api/daily/trends` and performs
+no provider requests. The deterministic windows are the full supplied interval
+plus starts in 1991 and 2001 strictly after the supplied start and no later than
+its end. No window extends beyond the supplied record; starts are deduplicated
+and every window shares the supplied end. Each window reuses only annual records
+inside its bounds and the same yearly OLS/HAC(1), completeness and rarity guards.
+
+The response echoes the input location/range and has `periods`, `family_size`,
+`alpha` (0.05), and `warnings`. Each period has the `DailyTrendsResponse` shape,
+including its own bounds, coverage and all four metric results. Here, nested
+`analysis.p_value_holm` and `significant` refer to the whole period/index family,
+not a per-period family of four. The family size is four times the number of
+windows: normally 12 for a 1981–2025 record, 8 for 1991–2025, or 4 when only the
+full selected interval fits. The correction starts from raw two-sided p-values;
+null tests keep an internal p=1 slot but publish null tests/decisions.
+
+The UI requests this calculation only when **Compare fitted periods** opens.
+Changing year/metric does not retest a selected window or alter the correction
+family. Closing the panel or replacing the underlying dataset cancels obsolete
+requests; responses must match the location and all predefined windows before
+display/export. The period CSV includes every index/window, individual intervals,
+raw and family-adjusted p-values, coverage, fitted spans, warnings and all sources.
+The original main-chart tests retain their separate four-index correction.
+Different slopes or labels across overlapping windows are not a formal test of
+differences between slopes; other locations/windows are outside this family.
+
 ## NASA provider and next backend work
 
 `fetch_monthly_series()` in `backend/app/services/nasa_power.py` now implements:
