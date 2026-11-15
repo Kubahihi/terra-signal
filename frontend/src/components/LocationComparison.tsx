@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { getSeries } from '../lib/api'
-import { coordinates, exampleLocations, type Location } from '../lib/locations'
+import { coordinates, exampleLocations, exampleLocationValue, type Location } from '../lib/locations'
 import { originLabel } from '../lib/evidence'
 import type { SeriesResponse, Variable } from '../types/api'
 import SeriesChart from './SeriesChart'
@@ -50,8 +50,8 @@ export default function LocationComparison({ enabled, onToggle, location, compar
     <h2 id="comparison-heading" className={standalone ? 'sr-only' : undefined}>Monthly comparison</h2>
     {!standalone && <button type="button" className="secondary-button" onClick={onToggle} aria-expanded={enabled} aria-controls="location-comparison-content">{enabled ? 'Hide comparison' : 'Compare places'}<Icon name="chevron" /></button>}
     {enabled && <div id="location-comparison-content">
-      <div className="comparison-controls"><label htmlFor="comparison-location">Compare with</label><select id="comparison-location" value={comparisonLocation.id ?? 'pinned'} onChange={event => { const next = exampleLocations.find(item => item.id === event.target.value); if (next) onSelect(next) }}>
-        {!comparisonLocation.id && <option value="pinned">Pinned map point</option>}
+      <div className="comparison-controls"><label htmlFor="comparison-location">Compare with</label><select id="comparison-location" value={exampleLocationValue(comparisonLocation, 'pinned')} onChange={event => { const next = exampleLocations.find(item => item.id === event.target.value); if (next) onSelect(next) }}>
+        <option value="pinned" disabled>{comparisonLocation.name}</option>
         {exampleLocations.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
       </select><button type="button" className="text-button" onClick={() => onSelect(location)}>Pin selected map point here</button><span>{start}–{end} · {variable === 'T2M' ? 'Air temperature' : 'Precipitation'}</span></div>
       {samePoint ? <p className="comparison-hint" role="status">This is the selected map point. Move the map marker or choose a different place above to compare two locations.</p>

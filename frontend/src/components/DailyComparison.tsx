@@ -3,7 +3,7 @@ import { dailyMetrics } from '../lib/dailyData'
 import { dailyComparisonCsv, dailyComparisonRows, sameLocation, sharedDailyMaximum } from '../lib/dailyComparison'
 import { dailyEvidence, dailyFit, formatDailyP } from '../lib/dailyTrends'
 import { formatRate, originLabel } from '../lib/evidence'
-import { coordinates, exampleLocations, type Location } from '../lib/locations'
+import { coordinates, exampleLocations, exampleLocationValue, type Location } from '../lib/locations'
 import { useDailyRecord, type DailyRecordState } from '../lib/useDailyRecord'
 import type { DailyMetric } from '../types/api'
 import { YearBarChart } from './CalendarChart'
@@ -25,7 +25,7 @@ export default function DailyComparison(props: Props) {
     {!props.standalone && <button type="button" className="secondary-button" onClick={props.onToggle} aria-expanded={props.enabled} aria-controls="daily-comparison-content">{props.enabled ? 'Hide comparison' : 'Compare places'}<Icon name="chevron" /></button>}
     {props.enabled && <div id="daily-comparison-content">
       <div className="daily-comparison-picker"><div><span className="comparison-point-key">A</span><div><strong>{props.location.name}</strong><p>{coordinates(props.location.lat, props.location.lon)}</p></div><button type="button" className="text-button" onClick={() => props.onChooseMapPoint('a')}>Choose A on map <Icon name="pin" /></button></div><div><span className="comparison-point-key point-b">B</span><div><strong>{props.comparisonLocation.name}</strong><p>{coordinates(props.comparisonLocation.lat, props.comparisonLocation.lon)}</p></div><button type="button" className="text-button" onClick={() => props.onChooseMapPoint('b')}>Choose B on map <Icon name="pin" /></button></div></div>
-      <details className="daily-comparison-examples"><summary>Choose point B <Icon name="chevron" /></summary><label htmlFor={selector}>Point B</label><select id={selector} value={props.comparisonLocation.id ?? 'custom'} onChange={event => { const next = exampleLocations.find(item => item.id === event.target.value); if (next) props.onSelect(next) }}><option value="custom" disabled>Clicked map point</option>{exampleLocations.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></details>
+      <details className="daily-comparison-examples"><summary>Choose point B <Icon name="chevron" /></summary><label htmlFor={selector}>Point B</label><select id={selector} value={exampleLocationValue(props.comparisonLocation)} onChange={event => { const next = exampleLocations.find(item => item.id === event.target.value); if (next) props.onSelect(next) }}><option value="custom" disabled>{props.comparisonLocation.name}</option>{exampleLocations.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}</select></details>
       {!props.validPeriod ? <p className="form-error">Choose a valid period above to compare locations.</p>
         : sameLocation(props.location, props.comparisonLocation) ? <p className="comparison-hint" role="status">A and B are the same point. Choose B on the map and click a different place.</p>
         : <ComparisonBody {...props} />}

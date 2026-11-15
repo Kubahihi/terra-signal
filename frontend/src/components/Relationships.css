@@ -71,6 +71,8 @@
 .relationship-caution p, .relationship-model-note, .relationship-status { margin: 0; font-size: 11px; line-height: 1.9; }
 .relationship-model-note { color: #6c8476; padding: 12px 15px; background: #edf3ed; border-radius: 4px; margin-bottom: 16px; }
 .relationship-status { color: var(--muted); margin-top: 15px; }
+.vegetation-ready { color: #5a7867; font-size: 11px; line-height: 1.9; margin: 18px 0; }
+.vegetation-ready .text-button { font-size: inherit; margin-left: 7px; }
 .relationship-method { border-top: 1px solid var(--border); margin-top: 20px; }
 .relationship-method summary { display: flex; align-items: center; justify-content: space-between; gap: 15px; list-style: none; font-size: 11px; color: var(--muted); padding: 18px 0; }
 .relationship-method p { font-size: 11px; line-height: 1.9; color: var(--muted); margin: 0 0 13px; }

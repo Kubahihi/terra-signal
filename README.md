@@ -16,8 +16,8 @@ Prague and Medicine Hat include attributed original NASA snapshots for outages.
 The interface reports source, retrieval date, data origin, units, and limitations.
 The statistics are exploratory and still need the team's scientific review.
 
-The opening **Map** displays the saved 1981–2025 NASA analysis at ten sampled
-grid cells. Its three views are **Year** (exact annual counts), **Vs usual**
+The opening **Map** displays the saved 1981–2025 NASA analysis at 43 sampled
+grid cells, including more Czech, European and global points. Its three views are **Year** (exact annual counts), **Vs usual**
 (the selected year's count minus that place's 1991–2020 mean) and **Trend**
 (the full-record fitted rate). New map links default to Vs usual; existing
 links that explicitly select Year or Trend retain that view.
@@ -27,7 +27,7 @@ each year, including leap years. One missing reference year withholds the
 departure. Map markers, the comparison chart and A minus B all show the same
 quantity for the chosen view. Color and size scales stay fixed across places
 and animation years. Annual counts and departures are descriptive and receive
-no significance label; Trend keeps its fixed 40-test Holm family and separately
+no significance label; Trend keeps its fixed 172-test Holm family and separately
 labelled individual 95% intervals. The points describe surrounding model cells,
 not administrative regions or an interpolated global trend surface.
 
@@ -37,12 +37,15 @@ uncertainty, coverage and source notes are available on demand. The interface
 uses short functional labels rather than repeated page headlines and taglines.
 There is no decorative vegetation overlay on Map.
 
-An independent numerical audit in `backend/tests/test_atlas_archive.py` checks
-all 450 archived annual rows, 40 fitted lines, HAC intervals, p-values and the
-40-test correction without calling the production regression function. Where
-the ignored original NASA cache is available, it also recounts 65,744 daily
-observations at Prague, Medicine Hat, Brno and Athens. The remaining six points'
-raw daily observations are not covered by that optional local recount.
+The opening map uses the separate `trend-atlas-1981-2025.json` archive: 1,935
+complete annual rows and 7,740 index values. The reproducible builder is
+`scripts/build_trend_atlas.py`. An independent audit in
+`backend/tests/test_expanded_atlas.py` checks every fitted line, HAC interval,
+raw p-value and the full 172-test correction without calling the production
+regression function. When the ignored original NASA cache is available, it also
+recounts the 33 new points from the exact response bytes identified by SHA-256.
+The original ten-point guided-reference archive and its independent 40-test
+audit remain unchanged.
 
 The collapsed **Guided examples** section in Explore → Place contains the
 one-click findings and three guided investigations. Its cards open Brno × Athens hot-day comparisons, frost-day
@@ -144,24 +147,27 @@ no independent-observation p-value, significance badge or causal claim is made.
 Matched/raw CSV exports retain both source chains, conversion rules, settings,
 coverage, adjusted values and missing observations.
 
-MODIS MOD13Q1 NDVI can be requested through the public ORNL DAAC subset API in
-five-year batches. Only good-quality pixels and complete composite-start-month
-coverage enter the monthly proxy. The smaller MODIS footprint is labelled
-separately from the weather grid. South Moravia and Medicine Hat are location
-shortcuts, not preloaded satellite findings. During implementation ORNL requests
-returned 503/timeouts; a recent ten-second connectivity probe also timed out,
-so a successful live **numeric ORNL subset retrieval** remains unverified.
-The interface reports outages without fabricating vegetation data.
+MODIS MOD13Q1 collection 061 NDVI is loaded numerically through the public
+Microsoft Planetary Computer API, using original NDVI and pixel-reliability COG
+assets. Each observation is a quality-filtered 9 × 9 native-pixel area around
+the selected point, about 2.085 km on each side. At least 41 of 81 pixels must
+have reliability flag zero and valid NDVI; every scheduled composite in a month
+must pass before that month's proxy is available. Clouds and missing scenes
+remain gaps. The smaller footprint is labelled separately from the weather grid.
+A complete 2001–2025 request at Berlin was verified against the live service;
+this verifies retrieval, not complete quality coverage or an eligible correlation.
+ORNL's failing subset service is no longer the primary download path.
 
 Choosing the NDVI mode does not change the selected period. Clicking **Load
-NDVI** for the API can move a pre-2001 start to 2001; CSV imports retain their
-validated requested period. Loading reports initial contact, elapsed seconds
-and completed five-year batches. Each such batch contains up to 15 smaller
-ORNL requests, so zero completed batches does not mean no request has started.
-Each upstream HTTP request has a 20-second deadline including queueing and a
-15-second read timeout. These are per-request bounds, not a total download or
-five-year-batch deadline. Completed original subset responses stay cached for
-retry when a later request fails.
+NDVI** can move a pre-2001 start to 2001; CSV imports retain their validated
+requested period. The browser downloads one year at a time and reports elapsed
+seconds and completed years. Each year requires a catalog request and the
+available nominal 16-day scenes. Up to four source requests run concurrently,
+with a 30-second per-request deadline including queueing, a 20-second read
+timeout and five-second connection timeout. This is not a whole-download
+deadline. Validated catalog JSON and original numeric NPY bytes are cached for
+24 hours; a source outage may reuse matching saved data with their original
+retrieval dates. Retry retains completed source responses.
 
 An original ORNL `filtered_scaled_250m_16_days_NDVI.csv` export can also be imported
 locally. The parser checks product, collection, scaled values, coordinates and

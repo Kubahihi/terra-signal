@@ -99,8 +99,9 @@ The year slider highlights an observation without refitting the trend.
 
 Daily hot/frost-day counts, warm-night proxies and consecutive dry-day lengths
 are calculated in the separate daily layer described below. They are not inferred
-from these monthly aggregates. Soil-moisture/NDVI integrations and formal
-comparisons of multiple period-specific slopes remain future work.
+from these monthly aggregates. Soil-wetness and NDVI relationships are described
+separately below. Formal comparisons of multiple period-specific slopes remain
+future work.
 
 References: [NASA POWER monthly data](https://power.larc.nasa.gov/docs/services/api/temporal/monthly/),
 [NASA POWER grid resolution](https://power.larc.nasa.gov/docs/services/).
@@ -226,8 +227,13 @@ coverage and sources are disclosed on demand rather than repeated beside the
 map. Short functional controls replace repeated headline/tagline blocks.
 This reorganization does not change an index definition or statistical family.
 
-The opening Map visualizes the fixed ten-point, four-index 1981–2025
-archive. **Year**, **Vs usual** and **Trend** are separate views. New links
+The opening Map visualizes the fixed 43-point, four-index 1981–2025
+archive in `frontend/public/data/trend-atlas-1981-2025.json`. It contains 1,935
+complete annual rows and 7,740 exact index values. The reproducible builder
+`scripts/build_trend_atlas.py` retains the original ten reference points and
+adds 33 coordinates fixed before acquisition and examination of this scan.
+The original guided-reference file remains unchanged. **Year**, **Vs usual**
+and **Trend** are separate views. New links
 default to Vs usual; explicit legacy Year/Trend links keep their view. Moving
 the year never refits or relabels a 45-year trend. Counts require complete annual
 coverage, retain true zeros, and leave unavailable years as gaps.
@@ -251,7 +257,7 @@ Trend uses full-record rates, with the accompanying chart labelled as annual
 counts. Annual counts, departures and their arithmetic differences are
 descriptive; no significance or uncertainty claim is inferred from their color.
 
-For each index/view, the marker scale is shared across all ten points and stays
+For each index/view, the marker scale is shared across all 43 points and stays
 fixed across all animation years. Circle area above a small selectable center
 is proportional to magnitude. A blue–neutral–red scale encodes signed trend
 rates or departures; raw counts use a sequential light-to-red scale. Point
@@ -264,22 +270,32 @@ between these sampled cells or claim administrative-region averages or global
 coverage for the weather trends. Obsolete `atlasLayer` query parameters are
 removed; there is no vegetation imagery layer on Map.
 
-Atlas significance uses `p_holm_40` and `significant_across_scan` from the fixed
-40-test scan, rather than the nested per-point four-test result. Individual 95%
+Atlas significance uses `p_holm_scan` and `significant_across_scan` from the fixed
+172-test scan (43 candidates × four indices), rather than the nested per-point
+four-test result. Individual 95%
 intervals are not simultaneous, so an interval can exclude zero while the
-40-test adjusted result remains unresolved. A constant observed series retains
+172-test adjusted result remains unresolved. A constant observed series retains
 a zero rate with unavailable inference. Comparing two displayed rates or annual
 counts does not test a difference between their trends.
 
 The browser parser checks annual coverage, independently recomputes each OLS
 line, and checks the full Holm family before displaying the archive. The
-independent backend archive audit additionally recomputes HAC(1) slope variance
-with centered calendar years, Bartlett weights, n/(n−2) correction and Student-t
-reference, verifying all 40 intervals and raw p-values. A local optional test
-recounts the 36 original cached NASA batches for Prague, Medicine Hat, Brno and
-Athens (65,744 daily records and 720 annual metric values). This raw recount
-does not cover the other six points; it is skipped when the ignored cache is
-unavailable. Source retrieval dates and analysis creation time remain distinct.
+independent `backend/tests/test_expanded_atlas.py` audit additionally recomputes
+HAC(1) slope variance with centered calendar years, Bartlett weights, n/(n−2)
+correction and Student-t reference, verifying all 172 intervals and raw
+p-values. Its optional local test recounts the 33 new points from the exact
+original NASA response bytes named by SHA-256. This is skipped when the ignored
+cache is unavailable. The separate legacy audit checks all ten original points'
+annual records and fits, plus an optional original-cache daily recount for
+Prague, Medicine Hat, Brno and Athens. Source retrieval dates and analysis
+creation time remain distinct.
+
+The expanded schema retains correction slots for all fixed candidates even
+when a point is unavailable; unavailable tests occupy p=1 internally and remain
+null in published inference. The parser supports the original ten-point,
+40-test schema only as a fallback when the expanded file is absent (HTTP 404),
+not when expanded data are corrupt or a service fails. An expanded scan uses
+its own full family; the original guided-reference findings retain theirs.
 
 The one-click finding cards are references to the saved 2026-11-14 analysis of
 ten predefined points over 1981–2025. Their displayed rates retain the original
@@ -327,7 +343,7 @@ period, while avoiding selection of a window merely to obtain a small p-value.
 
 The challenge's additional portals are external exploration resources. NASA
 POWER supplies the weather and soil-wetness pipelines. The Relationships
-workspace separately supports MOD13Q1 through the public ORNL subset service
+workspace separately supports numeric MOD13Q1 through Microsoft Planetary Computer
 and explicitly labelled user-provided filtered CSV imports. Other resource links
 remain external tools. Their use terms and access requirements must be checked
 independently. POWER meteorology provenance:
@@ -432,16 +448,26 @@ Reference: [NASA POWER hydrology definitions and source distinctions](https://po
 
 ## MODIS vegetation aggregation and imported provenance
 
-The live provider uses Terra MOD13Q1 nominal 250 m, 16-day NDVI composites from
-the public ORNL DAAC subset service, beginning with complete years from 2001.
-NDVI is vegetation greenness; it is not crop yield or a direct measurement of
-plant health, species diversity or drought damage. Each subset's actual pixel
-rectangle, pixel size and collection are retained.
+The live provider uses Terra MOD13Q1 collection 061 nominal 250 m, 16-day NDVI
+composites from original COG assets through the public Microsoft Planetary
+Computer catalog and numeric data API, beginning with complete years from 2001.
+Aqua/MYD scenes are excluded. NDVI describes vegetation greenness; it is not
+crop yield or a direct measurement of plant health, species diversity or drought
+damage. Rendered color imagery is never converted to observations.
 
-For the API path, matching NDVI and pixel-reliability bands must belong to one
-collection and grid. Only reliability flag zero (good) and integer NDVI from
--2000 through 10000 are accepted; NDVI is scaled once by 0.0001. At least 50%
-of subset pixels must pass to form an equal-pixel-weight composite mean.
+Each numeric NPY crop covers a 9 × 9 native sinusoidal-pixel window centered on
+the pixel containing the selected point, approximately 231.656 m per pixel and
+2.085 km per side. The provider validates the projection, transform, stable cell,
+asset paths, band data types and NDVI scale, then requests the same native grid
+with nearest sampling and no unscaling. The returned mask and numeric shape
+must match this request; original response bytes and their SHA-256 are retained.
+This is a defined area mean, not the footprint of an ORNL subset or a single
+point sample.
+
+Matching NDVI and pixel-reliability bands must belong to one collection and
+grid. Only masked-valid pixels with reliability flag zero (good) and integer
+NDVI from -2000 through 10000 are accepted; NDVI is scaled once by 0.0001.
+At least 41 of 81 pixels must pass to form an equal-pixel-weight composite mean.
 Marginal-quality, cloudy, snow/ice, fill and malformed pixels are excluded.
 
 Monthly NDVI is the equal-weight mean of **all scheduled** 16-day composite
@@ -457,35 +483,41 @@ point. Different spatial supports, land cover, cloud/snow-dependent missingness,
 temporal compositing and selected reference periods can affect the coefficient.
 These limits remain explicit even when both source chains are NASA products.
 
-The public ORNL service returned 503 during integration verification, and a
-recent ten-second connectivity probe timed out. Successful live numeric subset
-retrieval remains unverified. These are observed availability limits, not a
-claim that the product is permanently unavailable. A failed live request may
-use only a valid saved original subset with its original retrieval metadata.
-Completed original responses are cached independently, so a later failed
-request does not discard earlier cached subsets. No synthetic, image-derived
-or weather-derived NDVI is used. The browser also accepts the documented ORNL
-filtered/scaled pixel CSV format, including the land-cover-mask variant.
+The original ORNL service returned 503/timeouts during integration verification,
+so it is no longer the primary download provider. The numeric Planetary Computer
+path was verified live for Berlin for all requested years 2001–2025. This
+verifies retrieval and source provenance, not complete good-quality monthly
+coverage. Strict cloud/snow/quality filtering can leave many months missing;
+a loaded series does not necessarily meet the 80% coverage rule for displaying
+r. The interface reports usable months and offers an all-month view without
+weakening quality or correlation requirements.
 
-Each application batch requests one to five complete years. The provider splits
-each year into at most ten composite dates per upstream call: three smaller
-requests per complete year, or 15 for a five-year batch. Up to two requests run
-concurrently under a shared semaphore. An upstream HTTP call has a 20-second
-deadline that includes waiting for this semaphore; its network read timeout is
-15 seconds and connect timeout is five seconds. The 20-second limit is not a
-deadline for a whole five-year batch or the complete browser download. A slow
-batch can therefore take longer while still completing individual calls within
-their limits. On a failed group, unfinished sibling requests are cancelled;
-already validated cached responses remain reusable.
+The browser requests one complete calendar year at a time; the API accepts one
+to five. Each request searches the catalog and retrieves a numeric crop for each
+available nominal scene. Up to four source requests run concurrently under a
+shared semaphore. Each upstream HTTP call has a 30-second deadline including
+waiting for this semaphore, a 20-second network read timeout and five-second
+connect timeout. These bounds do not apply to an entire application batch or
+the full download. Failed groups cancel unfinished sibling requests.
 
-The browser reports contact with ORNL before the first complete five-year batch,
-elapsed seconds, completed batches and the later rainfall-pairing stage. Batch
-progress is not a count of individual upstream calls or downloaded composites.
-Cancellation stops the active browser request and allows retry. Selecting the
-NDVI mode alone does not change the period. Explicit Load NDVI can change a
-pre-2001 start to 2001 for an API request when the end is 2001 or later; an
-earlier end requires a period change. CSV imports keep their requested period
-and undergo the same quality and missing-month checks, without this API clamp.
+Validated catalog JSON and original numeric NPY bytes are cached independently
+for 24 hours under `vegetation-pc-v1`. A failed live request may use only a valid
+matching saved response with its original retrieval metadata; a failed later
+request does not discard earlier cached responses. Future retrieval timestamps,
+wrong request identities, corrupt bytes or unsupported geometry cannot be
+published as saved observations. No synthetic or weather-derived NDVI is used.
+
+The browser reports initial contact, elapsed seconds, completed years and the
+later rainfall-pairing stage. Progress counts application years, not individual
+source calls or composites. Cancellation stops the active browser request and
+allows retry. Selecting NDVI mode alone does not change the period. Explicit
+Load NDVI can change a pre-2001 start to 2001 when the end is 2001 or later;
+an earlier end requires a period change. CSV imports keep their requested period
+and undergo quality and missing-month checks without this API clamp.
+
+The browser also accepts documented ORNL filtered/scaled pixel CSV files,
+including the land-cover-mask variant. Imports retain their declared rectangle,
+collection and pixel size, separately from the live provider's fixed 9 × 9 area.
 
 For imports, already-scaled numeric pixels in -0.2..1 are retained and `F` is
 treated as a rejected pixel. The same 50% composite and complete-month schedule
@@ -498,7 +530,8 @@ NASA provenance chain. Unknown original retrieval times remain unknown. The
 original CSV is kept in browser memory for reprocessing when the selected
 period changes at the same point; provenance is retained in exports.
 
-References: [NASA MODIS vegetation product](https://modis.gsfc.nasa.gov/data/dataprod/mod13.php),
+References: [Planetary Computer MODIS collection](https://planetarycomputer.microsoft.com/api/stac/v1/collections/modis-13Q1-061),
+[NASA MODIS vegetation product](https://modis.gsfc.nasa.gov/data/dataprod/mod13.php),
 [MOD13Q1 file specification and quality flags](https://ladsweb.modaps.eosdis.nasa.gov/filespec/MODIS/61/MOD13Q1),
 [ORNL MODIS subset web service](https://modis.ornl.gov/data/modis_webservice.html),
 [ORNL filtered export documentation](https://modis.ornl.gov/documentation.html).

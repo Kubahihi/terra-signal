@@ -10,7 +10,7 @@ import LocalQuestions from './components/LocalQuestions'
 import DailyWeather from './components/DailyWeather'
 import DailyComparison from './components/DailyComparison'
 import { getHealth, getSeries } from './lib/api'
-import { coordinates, exampleLocations, locationAt, type Location } from './lib/locations'
+import { coordinates, exampleLocations, exampleLocationValue, locationAt, type Location } from './lib/locations'
 import { variableInfo, type Investigation } from './lib/investigations'
 import { exampleAnalysis, type DailyExample } from './lib/dailyExamples'
 import { seriesCsv } from './lib/csv'
@@ -319,8 +319,8 @@ export default function App() {
           <span aria-hidden="true">—</span>
           <input aria-label="End year" type="number" min="1981" max={lastYear} value={end || ''} onChange={event => setEnd(Number(event.target.value))} />
         </div><button type="button" className="text-button full-record" onClick={() => { setStart(1981); setEnd(lastYear) }}>Full record</button></div>
-        <div className="example-control"><label className="control-label" htmlFor="example">Jump to</label><select id="example" value={location.id ?? 'custom'} onChange={event => { const next = exampleLocations.find(item => item.id === event.target.value); if (next) pickLocation(next) }}>
-          <option value="custom" disabled>Selected map point</option>
+        <div className="example-control"><label className="control-label" htmlFor="example">Jump to</label><select id="example" value={exampleLocationValue(location)} onChange={event => { const next = exampleLocations.find(item => item.id === event.target.value); if (next) pickLocation(next) }}>
+          <option value="custom" disabled>{location.name}</option>
           {exampleLocations.map(item => <option key={item.id} value={item.id}>{item.name}</option>)}
         </select></div>
         {workspace !== 'explore' && <button type="button" className="secondary-button choose-on-map" onClick={() => navigate('explore', 'location-map-panel')}><Icon name="map" />Choose on map</button>}

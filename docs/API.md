@@ -340,16 +340,26 @@ Reference: [NASA POWER hydrology and soil-wetness definitions](https://power.lar
 Query fields are `lat`, `lon`, `start`, `end`, and optional `refresh`. A request
 covers one to five ordered, complete calendar years from 2001 through the last
 complete year; invalid queries return 422. The browser combines sequential
-five-year requests for a longer selection and verifies one consistent footprint
+one-year requests for a longer selection and verifies one consistent footprint
 and collection. Earlier selected months have no observations in this API path.
 
-The provider requests public NASA ORNL DAAC Terra `MOD13Q1` subsets, at most ten
-16-day acquisition dates per upstream request and two concurrent downloads.
-Requested extent is 1 km above/below and left/right of the point; actual returned
-pixel geometry is reported, rather than assuming an exact fixed area. Original
-JSON batches are cached for 24 hours under a separate `vegetation` namespace;
-a failed refresh may reuse a valid saved batch with its original provenance.
-No Earthdata credentials are sent to this public subset endpoint.
+The provider finds Terra `MOD13Q1` collection 061 scenes in the public Microsoft
+Planetary Computer catalog and samples their original NDVI/pixel-reliability
+COG assets as native numeric NPY crops. Aqua scenes are excluded. Each crop is
+9 × 9 native sinusoidal pixels centered on the pixel containing the requested
+point (approximately 231.656 m per pixel, 2.085 km per side). Source projection,
+cell identity, asset types/scaling and requested extent are validated; nearest
+sampling and native projection preserve the original pixel grid. Rendered map
+colors are never used as observations.
+
+Original catalog JSON and numeric NPY bytes, including a SHA-256, are cached for
+24 hours under `vegetation-pc-v1`. A failed refresh may reuse only a valid
+matching saved response with its original retrieval metadata. Up to four
+requests run concurrently. Each source request has a 30-second deadline
+including queueing, a 20-second read timeout and five-second connect timeout;
+these are not a deadline for the whole calendar-year/application batch. Failed
+groups cancel unfinished siblings while retaining validated cache entries.
+No Earthdata credentials are required by this public path.
 
 The response includes point/period, `product: "MOD13Q1"`, `unit: "NDVI"`,
 `series` objects (`date`, `value`, `available_composites`, `expected_composites`),
@@ -362,16 +372,18 @@ was newly retrieved. Different grids or collections cannot be silently merged.
 
 Only paired NDVI/quality bands from the same collection are accepted. Raw integer
 NDVI in -2000..10000 is scaled once by 0.0001. A pixel must have
-`pixel_reliability=0`; at least half the subset pixels must pass. Monthly values
+`pixel_reliability=0` and a valid mask; at least 41 of 81 crop pixels must pass.
+Monthly values
 are equal-weight means of every scheduled 16-day composite whose nominal start
 date lies in that month. If any scheduled composite is absent or fails the
 area-quality threshold, the month stays null. This is a composite-start monthly
 proxy, not a day-weighted calendar-month NDVI product.
 
-During integration verification the public ORNL service returned upstream 503
-responses. Availability can change; the application offers retry and reports
-503 when neither live data nor a valid matching cache is available. It does not
-represent the outage as permanent or substitute weather observations for NDVI.
+The numeric Planetary Computer path was verified live for Berlin over
+2001–2025. Quality failures remain null, and a successful download need not
+provide sufficient coverage to report a correlation. The route returns 503 if
+neither live data nor a valid matching cache is available. ORNL subset requests
+previously failed with 503/timeouts and are no longer the primary provider.
 
 An alternative browser import accepts the original ORNL
 `filtered_scaled_250m_16_days_NDVI.csv`, with the supported `_landcovermask`
@@ -384,6 +396,7 @@ These records keep `data_origin: import` in browser provenance, distinct from
 the API's live/cache origins. The original import stays in browser memory for
 reprocessing the same point over another period.
 
-References: [ORNL MODIS web service](https://modis.ornl.gov/data/modis_webservice.html),
+References: [Planetary Computer MODIS collection](https://planetarycomputer.microsoft.com/api/stac/v1/collections/modis-13Q1-061),
+[ORNL MODIS web service](https://modis.ornl.gov/data/modis_webservice.html),
 [MOD13Q1 specification and quality fields](https://ladsweb.modaps.eosdis.nasa.gov/filespec/MODIS/61/MOD13Q1),
 [ORNL export documentation](https://modis.ornl.gov/documentation.html).

@@ -2,7 +2,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, HTTPException, Query
 
-from ..services.nasa_ndvi import fetch_vegetation
+from ..services.planetary_ndvi import fetch_vegetation
 from ..services.nasa_power import ProviderError
 from ..vegetation_schemas import VegetationQuery, VegetationResponse
 from .series import LAST_COMPLETE_YEAR
@@ -11,7 +11,7 @@ router = APIRouter(prefix="/api", tags=["Satellite vegetation"])
 
 
 @router.get("/vegetation", response_model=VegetationResponse,
-            responses={503: {"description": "NASA ORNL satellite data and a matching saved response are unavailable"}})
+            responses={503: {"description": "Numeric MODIS data and a matching saved response are unavailable"}})
 async def get_vegetation(
     lat: Annotated[float, Query(ge=-90, le=90)],
     lon: Annotated[float, Query(ge=-180, le=180)],
