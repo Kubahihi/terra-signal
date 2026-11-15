@@ -8,6 +8,7 @@ RUN npm run build
 FROM python:3.12-slim AS application
 WORKDIR /app
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+COPY LICENSE THIRD_PARTY_NOTICES.md README.md ./
 COPY backend/requirements.lock.txt backend/requirements.lock.txt
 RUN pip install --no-cache-dir -r backend/requirements.lock.txt
 COPY backend/ backend/

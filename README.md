@@ -323,3 +323,16 @@ The bundled snapshots cover both preset points, both variables, and 1981-2025.
 Annual summaries (NASA month 13) are excluded. Missing monthly observations remain
 null. Precipitation is a mean daily rate in mm/day, not a monthly rainfall total.
 See `docs/METHODOLOGY.md` for statistical assumptions and verification limits.
+
+## License
+
+Copyright 2026 TerraSignal contributors.
+
+TerraSignal's original source code is licensed under the
+[Apache License, Version 2.0](LICENSE). Third-party libraries, NASA observations
+and map data remain subject to their respective licenses and terms; this
+license does not relicense those materials.
+
+See [third-party notices and data credits](THIRD_PARTY_NOTICES.md) for sources
+and applicable terms. The frontend also distributes the original browser-library
+license texts in [third-party-licenses.txt](frontend/public/third-party-licenses.txt).
