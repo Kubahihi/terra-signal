@@ -18,7 +18,13 @@ function soil(overrides = {}) {
   return { ...rain(), parameter: 'GWETROOT', unit: '1', series: monthly(0.4), source_url: sourceUrl('soil'), ...overrides }
 }
 function vegetation(year, overrides = {}) {
-  return { latitude: query.lat, longitude: query.lon, start: year, end: year, product: 'MOD13Q1', unit: 'NDVI', series: monthly(0.6, year, year).map(row => ({ ...row, available_composites: 2, expected_composites: 2 })), source: 'NASA MODIS fixture', source_url: 'https://planetarycomputer.microsoft.com/api/stac/v1/collections/modis-13Q1-061', spatial_support: '9 × 9 native MODIS pixels', pixel_size_m: 231.656358264, nrows: 9, ncols: 9, collections: ['061'], sources: [{ source_url: `https://planetarycomputer.microsoft.com/api/stac/v1/search?year=${year}`, retrieved_at: stamp, data_origin: 'cache' }], retrieved_at: stamp, data_origin: 'cache', warnings: [], ...overrides }
+  // The 23 annual composites leave October with one start in normal years,
+  // and November with one start in leap years; every other month has two.
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)
+  return { latitude: query.lat, longitude: query.lon, start: year, end: year, product: 'MOD13Q1', unit: 'NDVI', series: monthly(0.6, year, year).map(row => {
+    const count = Number(row.date.slice(5, 7)) === (leap ? 11 : 10) ? 1 : 2
+    return { ...row, available_composites: count, expected_composites: count }
+  }), source: 'NASA MODIS fixture', source_url: 'https://planetarycomputer.microsoft.com/api/stac/v1/collections/modis-13Q1-061', spatial_support: '9 × 9 native MODIS pixels', pixel_size_m: 231.656358264, nrows: 9, ncols: 9, collections: ['061'], sources: [{ source_url: `https://planetarycomputer.microsoft.com/api/stac/v1/search?year=${year}`, retrieved_at: stamp, data_origin: 'cache' }], retrieved_at: stamp, data_origin: 'cache', warnings: [], ...overrides }
 }
 
 test('memory parser retains true zero and negative valid NDVI while explicit calendar gaps stay null', () => {
@@ -61,6 +67,25 @@ test('NDVI composite quality is retained and cannot turn an incomplete month int
   assert.equal(missing.vegetationQuality[0].available_composites, 0)
 })
 
+test('a saved NDVI month cannot lower its expected schedule to make partial coverage look complete', () => {
+  const june = { date: '2001-06-01', available_composites: 1, expected_composites: 1 }
+  const raw = dataset({ vegetation: [{ date: june.date, value: 0.5 }], vegetationQuality: [june] })
+  assert.throws(() => parseMemoryDataset(raw), /scheduled composites/)
+  assert.throws(() => parseMemoryDataset({ ...raw, vegetation: [{ date: june.date, value: null }] }), /scheduled composites/)
+  const october = { date: '2001-10-01', available_composites: 1, expected_composites: 1 }
+  assert.equal(parseMemoryDataset(dataset({ vegetation: [{ date: october.date, value: 0.5 }], vegetationQuality: [october] })).vegetationQuality[0].expected_composites, 1)
+})
+
+test('the MODIS monthly schedule respects the leap-day shift rather than assuming two composites per month', () => {
+  const sources = ['rain', 'soil', 'vegetation'].map(role => role === 'vegetation' ? source(role) : { ...source(role), source_url: sourceUrl(role, { end: '2004' }) })
+  const base = dataset({ end: 2004, sources, vegetation: [{ date: '2004-10-01', value: 0.5 }, { date: '2004-11-01', value: 0.6 }], vegetationQuality: [
+    { date: '2004-10-01', available_composites: 2, expected_composites: 2 },
+    { date: '2004-11-01', available_composites: 1, expected_composites: 1 },
+  ] })
+  assert.deepEqual(parseMemoryDataset(base).vegetationQuality.map(row => row.expected_composites), [2, 1])
+  assert.throws(() => parseMemoryDataset({ ...base, vegetationQuality: base.vegetationQuality.map(row => ({ ...row, expected_composites: 2, available_composites: 2 })) }), /scheduled composites/)
+})
+
 test('live memory loading converts precipitation and keeps matching, quality-checked source chains', async () => {
   const original = globalThis.fetch
   try {
@@ -92,6 +117,30 @@ test('a satellite outage retains weather and soil plus explicit missing NDVI', a
     assert.ok(data.rain.every(row => row.value !== null))
     assert.ok(data.vegetation.every(row => row.value === null))
     assert.ok(data.warnings.some(warning => warning.includes('unavailable')))
+  } finally { globalThis.fetch = original }
+})
+
+test('live NDVI with a forged complete schedule is rejected without publishing its observations or source', async () => {
+  const original = globalThis.fetch
+  try {
+    globalThis.fetch = async input => {
+      const url = new URL(String(input), 'http://localhost')
+      const year = Number(url.searchParams.get('start'))
+      let result
+      if (url.pathname === '/api/series') result = rain()
+      else if (url.pathname === '/api/soil') result = soil()
+      else {
+        result = vegetation(year)
+        const june = result.series.find(row => row.date.endsWith('-06-01'))
+        june.available_composites = 1
+        june.expected_composites = 1
+      }
+      return new Response(JSON.stringify(result))
+    }
+    const data = await loadMemory(query, 'Fixture', new AbortController().signal, () => {})
+    assert.ok(data.vegetation.every(row => row.value === null))
+    assert.equal(data.sources.filter(row => row.role === 'vegetation').length, 0)
+    assert.ok(data.warnings.some(warning => warning.includes('every scheduled composite')))
   } finally { globalThis.fetch = original }
 })
 

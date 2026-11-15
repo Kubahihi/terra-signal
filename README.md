@@ -208,6 +208,17 @@ connections. `scripts/build_memory_example.py` rebuilds the saved case from
 original local response caches; `--download` permits filling missing caches.
 The full event definitions and limitations are in `docs/METHODOLOGY.md`.
 
+Memory puts counterexamples first for an explicit claim: every dry episode
+includes both low soil wetness and low greenness. A counterexample requires one
+complete response record entirely above rank 20; missing values never qualify.
+The interface separately labels observed lows in both records and unresolved
+episodes. It shows response windows, valid-month counts, minimum ranks and
+cutoff checks at 15/20/25. The checked Prague case has two counterexamples,
+seven episodes with lows in both records and five unresolved cases. The strong
+2011 soil case opens first; the 2016/17 soil case is marked near the cutoff.
+Quick returns remain a separate timing question. Both evidence exports retain
+these claim-specific assessments and their method version.
+
 ## Project layout
 
 | Path | Purpose |

@@ -39,6 +39,24 @@
 .memory-record span { font-size: 10px; color: #7c8890; font-variant-numeric: tabular-nums; }
 .memory-record .memory-origin { font-size: 9px; padding: 5px 7px; color: #648071; background: #eaf0eb; border-radius: 3px; }
 .memory-coverage-note { margin: -3px 0 17px; color: #6b7d87; font-size: 10px; line-height: 1.7; }
+.memory-claim { padding: 20px 22px; margin: 18px 0; background: #fff; border: 1px solid #d7e0e5; border-radius: 6px; }
+.memory-claim h3 { margin: 0 0 10px; font-size: 20px; font-weight: 550; line-height: 1.45; color: #3e5666; letter-spacing: -.3px; }
+.memory-claim h3 em { font-style: normal; color: #76558d; text-decoration: underline; text-underline-offset: 4px; }
+.memory-claim > p { margin: 0; color: #637b88; font-size: 12px; line-height: 1.85; max-width: 1040px; }
+.memory-verdict-filters { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 18px; }
+.memory-verdict-filters button { display: flex; align-items: center; gap: 13px; padding: 14px; border: 1px solid #dfe6e9; border-radius: 5px; background: #f7fafb; color: #526f7f; text-align: left; }
+.memory-verdict-filters button.counterexample { background: #f4f0f9; border-color: #cbbbdc; color: #72558b; }
+.memory-verdict-filters button.unknown { background: #f7f8f9; color: #788792; }
+.memory-verdict-filters button[aria-pressed=true] { outline: 2px solid currentColor; outline-offset: -2px; }
+.memory-verdict-filters button > strong { font-size: 29px; font-weight: 500; font-variant-numeric: tabular-nums; }
+.memory-verdict-filters button > span { font-size: 12px; font-weight: 550; line-height: 1.6; }
+.memory-verdict-filters button small { display: block; font-size: 10px; font-weight: 400; line-height: 1.7; margin-top: 4px; }
+.memory-claim > .memory-claim-count { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 18px; margin-top: 13px; font-size: 10px; }
+.memory-claim-count button { margin-left: auto; font-size: 11px; }
+.memory-timing-heading { padding: 13px 0 12px; margin-top: 7px; border-top: 1px solid #dfe6e9; }
+.memory-timing-heading h3 { margin: 0 0 7px; font-weight: 550; color: #506c7c; font-size: 13px; }
+.memory-timing-heading p { margin: 0; font-size: 11px; color: #758995; line-height: 1.8; }
+#memory-selected-investigation, #memory-selected-month { scroll-margin-top: 88px; }
 .memory-insight { display: flex; align-items: center; justify-content: space-between; gap: 35px; background: #edf3f1; border: 1px solid #d8e4de; border-radius: 5px; padding: 22px 24px; margin-bottom: 18px; }
 .memory-insight > div:first-child { max-width: 800px; }
 .memory-outcome { display: block; font-size: 9px; letter-spacing: .5px; color: #617d6e; margin-bottom: 8px; }
@@ -48,6 +66,10 @@
 .memory-insight-date > span, .memory-insight-date small { font-size: 10px; color: #7b8a82; font-weight: 400; }
 .memory-insight-date strong { font-size: 13px; color: #4a685b; font-weight: 550; white-space: nowrap; }
 .memory-outcome-incomplete { background: #f1f4f5; border-color: #dce4e7; }
+.memory-outcome-unknown { background: #f1f4f5; border-color: #dce4e7; }
+.memory-outcome-unknown h3 { color: #4b6574; }
+.memory-outcome-low-observed { background: #edf3f6; border-color: #d3e0e8; }
+.memory-outcome-low-observed h3 { color: #456579; }
 .memory-outcome-incomplete h3 { color: #4b6574; }
 .memory-outcome-incomplete p, .memory-outcome-incomplete .memory-outcome { color: #74848e; }
 .memory-outcome-counterexample { background: #f2f1f7; border-color: #e0ddeb; }
@@ -69,6 +91,8 @@
 .memory-outcome-dot.lingering { background: #6d927e; }
 .memory-outcome-dot.counterexample { background: #9987b0; }
 .memory-outcome-dot.quick { background: #86a4b3; }
+.memory-outcome-dot.low-observed { background: #7797ab; }
+.memory-outcome-dot.unknown { background: #9aa6af; }
 .memory-episode-rank { color: #89969c; font-size: 9px; }
 .memory-episode-rank > strong { color: #6c818c; font-weight: 500; }
 .memory-episode-definition { font-size: 9px; line-height: 1.8; color: #8a969c; border-top: 1px solid #e9eef0; padding: 12px 3px 0; margin: 14px 0 0; }
@@ -104,6 +128,8 @@
 .memory-grid.median { stroke-dasharray: 3 4; stroke: #cdd6db; }
 .memory-dry-line { stroke: #c8b28f; stroke-dasharray: 3 4; stroke-width: .8; }
 .memory-episode-shade { fill: #f7f0e3; }
+.memory-response-shade { fill: #f0eaf7; }
+.memory-response-key { display: inline-block; width: 11px; height: 8px; background: #eee5f7; border: 1px solid #cfbfdf; }
 .memory-rain-return { stroke: #7b9c8c; stroke-dasharray: 4 4; stroke-width: 1.2; }
 .memory-observation-line { fill: none; stroke: var(--memory-rain); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .memory-month-dot { fill: var(--memory-rain); }
@@ -158,6 +184,8 @@
 .memory-outcome-pill.lingering { color: #698375; background: #eaf2ec; }
 .memory-outcome-pill.counterexample { color: #8a7ca0; background: #f1edf6; }
 .memory-outcome-pill.quick { color: #7994a4; background: #edf3f6; }
+.memory-outcome-pill.low-observed { color: #526f82; background: #edf3f6; }
+.memory-outcome-pill.unknown { color: #74838d; background: #eef1f3; }
 .memory-show-events { display: flex; align-items: center; gap: 6px; margin: 10px auto; font-size: 10px; }
 .memory-show-events .icon { width: 13px; height: 13px; }
 .memory-export { display: flex; align-items: center; justify-content: space-between; gap: 25px; padding: 19px 0; }
@@ -229,6 +257,14 @@
   .memory-source-groups { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
 @media (max-width: 550px) {
+  .memory-claim { padding: 17px 14px; }
+  .memory-claim h3 { font-size: 18px; }
+  .memory-claim > p { font-size: 11px; }
+  .memory-verdict-filters { grid-template-columns: 1fr; gap: 8px; }
+  .memory-verdict-filters button { padding: 10px 13px; }
+  .memory-verdict-filters button > strong { min-width: 32px; font-size: 25px; }
+  .memory-claim-count button { margin-left: 0; }
+  #memory-selected-investigation, #memory-selected-month { scroll-margin-top: 122px; }
   .landscape-memory { padding-top: 8px; }
   .memory-heading { margin: 8px 0 17px; }
   .memory-heading h2 { font-size: 24px; letter-spacing: -.65px; }

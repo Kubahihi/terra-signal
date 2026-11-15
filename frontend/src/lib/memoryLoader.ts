@@ -8,6 +8,18 @@ type Query = { lat: number; lon: number; start: number; end: number }
 const weatherFootprint = 'NASA POWER / MERRA-2 weather grid cell, approximately 0.5° × 0.625°'
 const roles: MemoryRole[] = ['rain', 'soil', 'vegetation']
 
+/** MOD13Q1 starts on day 1 of each year, then every 16 days, including leap years. */
+function scheduledCompositeCount(date: string): number {
+  if (!/^\d{4}-(?:0[1-9]|1[0-2])-01$/.test(date)) throw new Error('Invalid memory data: NDVI quality date.')
+  const year = Number(date.slice(0, 4)), month = Number(date.slice(5, 7)) - 1
+  const first = Date.UTC(year, 0, 1), nextYear = Date.UTC(year + 1, 0, 1)
+  let count = 0
+  for (let stamp = first; stamp < nextYear; stamp += 16 * 86_400_000) {
+    if (new Date(stamp).getUTCMonth() === month) count++
+  }
+  return count
+}
+
 function object(value: unknown, label: string): Record<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) throw new Error(`Invalid memory data: ${label}.`)
   return value as Record<string, unknown>
@@ -99,7 +111,7 @@ export function parseMemoryDataset(input: unknown): MemoryDataset {
       const date = text(row.date, 'NDVI quality date')
       const available = finite(row.available_composites, 'available NDVI composites')
       const expected = finite(row.expected_composites, 'expected NDVI composites')
-      if (!values.has(date) || seen.has(date) || !Number.isInteger(available) || !Number.isInteger(expected) || available < 0 || expected < 1 || available > expected || values.get(date) !== null && available !== expected) throw new Error('Invalid memory data: NDVI quality does not match monthly observations.')
+      if (!values.has(date) || seen.has(date) || !Number.isInteger(available) || !Number.isInteger(expected) || available < 0 || expected !== scheduledCompositeCount(date) || available > expected || values.get(date) !== null && available !== expected) throw new Error('Invalid memory data: NDVI quality does not match the scheduled composites and monthly observations.')
       seen.add(date)
       return { date, available_composites: available, expected_composites: expected }
     })
@@ -123,7 +135,7 @@ function powerSource(role: 'rain' | 'soil', report: SeriesResponse | SoilRespons
 function vegetationSources(report: VegetationData): MemorySource[] {
   if (report.product !== 'MOD13Q1' || report.unit !== 'NDVI' || report.collections?.length !== 1 || report.collections[0] !== '061') throw new Error('Memory vegetation requires NASA Terra MOD13Q1 collection 061 NDVI.')
   for (const point of report.series) {
-    if (!Number.isInteger(point.available_composites) || !Number.isInteger(point.expected_composites) || point.expected_composites < 1 || point.available_composites < 0 || point.available_composites > point.expected_composites || point.value !== null && point.available_composites !== point.expected_composites) throw new Error('Memory NDVI requires every scheduled composite to pass quality filtering.')
+    if (!Number.isInteger(point.available_composites) || !Number.isInteger(point.expected_composites) || point.expected_composites !== scheduledCompositeCount(point.date) || point.available_composites < 0 || point.available_composites > point.expected_composites || point.value !== null && point.available_composites !== point.expected_composites) throw new Error('Memory NDVI requires every scheduled composite to pass quality filtering.')
   }
   if (!report.sources?.length) throw new Error('Memory NDVI is missing original catalog and numeric source metadata.')
   return report.sources.map(row => ({ role: 'vegetation', source: report.source, source_url: row.source_url, retrieved_at: row.retrieved_at, data_origin: row.data_origin, spatial_support: report.spatial_support, product: report.product, collection: '061' }))

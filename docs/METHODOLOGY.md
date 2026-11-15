@@ -606,3 +606,51 @@ are retained. No inference is strengthened by restricting display to a
 particularly dramatic episode. CSV exports include raw observations, ranks,
 reference counts, definitions and provenance. JSON exports include the complete
 input dataset, method version, all episodes and the selected episode.
+
+### Claim-specific counterexamples
+
+The interface evaluates one explicit descriptive claim: **every detected dry
+episode includes both a low soil-wetness rank and a low greenness rank**. The
+response window is the entire episode plus its next three calendar months; the
+low band is rank at or below 0.20. `memoryEvidence.ts` computes the assessment
+directly from eligible monthly ranks, separately from the original return-timing
+labels. Its method version is `landscape-memory-evidence-v1`.
+
+An eligible observed rank at or below the cutoff establishes **low observed**
+for that record, even if other months are missing. A **counterexample** requires
+every intended response month to have an eligible rank, all strictly above the
+cutoff. Otherwise absence of a low response is **unknown**. A record boundary or
+next episode that cuts this window short prevents an absence claim. Dates,
+reference counts and finite ranks are checked explicitly.
+
+For the two-record claim, one complete record above the band is sufficient for
+a counterexample, even when the other record is low or unknown. Only two observed
+lows produce **low observed in both**; remaining episodes are **cannot determine**.
+These categories are mutually exclusive and sum to the total detected episodes.
+An early or simultaneous return is not a counterexample to this low-response
+claim. Return timing remains a separate assessment.
+
+The same proxy response windows are checked at cutoffs 0.15, 0.20 and 0.25, with
+rainfall episodes fixed at 0.20. These are descriptive definition checks, not
+confidence levels, and do not weaken quality rules. The minimum rank and its
+distance above the cutoff remain visible. Cases within five rank points of 20
+are marked near the cutoff.
+
+The checked Prague archive has two counterexamples, seven episodes with lows in
+both records and five unresolved episodes. In January-May 2011, soil has all
+eight January-August ranks with a minimum of 54.17/100, while greenness has an
+observed low rank of 20 in March. In November 2016-February 2017, soil has all
+seven November-May ranks but a minimum of only 20.83/100: a counterexample at 20,
+while the same values include a low at 25. Greenness in that episode is unknown.
+This threshold-sensitive case does not establish a universal absence of soil
+response.
+
+The counterexample with the greatest minimum-rank margin opens first. This is
+a disclosed demonstration choice; all episodes remain accessible. CSV and JSON
+retain the claim, its version, each record's assessment, cutoff checks and category
+counts alongside the original data and timing results. Original combined labels
+remain for compatibility, explicitly distinguished from the claim verdict.
+
+Stored and live NDVI quality counts must match MOD13Q1's actual nominal sixteen-day
+schedule starting on January 1, including leap-year shifts. Merely making the
+available and expected counts equal cannot make an incomplete month acceptable.

@@ -1,5 +1,6 @@
 import type { Observation } from '../types/api'
 import type { MemoryAnalysis, MemoryDataset, MemoryEvent, MemoryMonth, MemoryRecovery, MemoryRole } from '../types/memory'
+import { MEMORY_EVIDENCE_VERSION, memoryEventEvidence, memoryEvidenceSummary } from './memoryEvidence.ts'
 
 const MIN_REFERENCE_YEARS = 10
 const DRY_THRESHOLD = 0.2
@@ -238,7 +239,13 @@ export function memoryCsv(data: MemoryDataset, analysis: MemoryAnalysis, event: 
     ['rank_interpretation', 'Available-observation descriptive rank in 0..1; not a climate probability or a complete climate normal'],
     ['rain_units', 'monthly total mm; rolling rain3 sums three complete calendar months'], ['soil_units', 'dimensionless NASA POWER GWETROOT wetness fraction'], ['vegetation_units', 'quality-filtered MOD13Q1 NDVI greenness proxy'],
     ['episode_id', selected.id], ['episode_start', selected.start], ['episode_last_dry_window', selected.end], ['episode_driest_window', selected.anchor], ['episode_classification', selected.classification],
+    ['episode_classification_scope', 'Original return-timing navigation label; claim_assessment is the separate low-response verdict used by the interface'],
     ['algorithm_version', 'landscape-memory-v1'], ['rain_return_confirmed_month', selected.rainRecovery], ['rain_return_status', selected.rainRecoveryStatus], ['followup_end', selected.followupEnd], ['followup_end_reason', selected.followupReason], ['soil_response', JSON.stringify(selected.soil)], ['vegetation_response', JSON.stringify(selected.vegetation)],
+    ['claim_evidence_version', MEMORY_EVIDENCE_VERSION],
+    ['tested_claim', 'Every dry episode includes both a low soil-wetness rank and a low greenness rank during the episode through three subsequent months; low means rank <=0.20'],
+    ['claim_assessment', JSON.stringify(memoryEventEvidence(analysis, selected))],
+    ['claim_counts', JSON.stringify((() => { const summary = memoryEvidenceSummary(analysis); return { total: summary.events.length, counterexamples: summary.counterexamples.length, low_observed_in_both: summary.lowObserved.length, unknown: summary.unknown.length } })())],
+    ['claim_threshold_sensitivity', 'Proxy low-band thresholds 0.15/0.20/0.25 use the same response window and the same rainfall episodes selected at0.20; missing values are never counterexamples; fast returns do not establish absence of a low response'],
     ['dry_definition', 'At least two consecutive rolling3 rainfall ranks <=0.20; overlapping periods merged'],
     ['return_definition', 'Independently confirmed second consecutive month: rain rank >0.20; proxy rank >=0.50 after observed rank <=0.20; signed timing differences withheld across gaps or when either return is unknown'],
     ['followup', '12 months past last dry window, shortened by record boundary or next dry episode'],
@@ -252,5 +259,6 @@ export function memoryCsv(data: MemoryDataset, analysis: MemoryAnalysis, event: 
 
 export function memoryEvidenceJson(data: MemoryDataset, analysis: MemoryAnalysis, event: MemoryEvent): string {
   const selected = verifiedEvent(data, analysis, event)
-  return JSON.stringify({ schemaVersion: 1, algorithmVersion: 'landscape-memory-v1', method: 'TerraSignal landscape memory: descriptive calendar-month ranks and confirmed observed returns', selectedEvent: selected, data, analysis }, null, 2)
+  return JSON.stringify({ schemaVersion: 1, algorithmVersion: 'landscape-memory-v1', method: 'TerraSignal landscape memory: descriptive calendar-month ranks and confirmed observed returns', selectedEvent: selected, data, analysis,
+    claimEvidence: { version: MEMORY_EVIDENCE_VERSION, claim: 'Every dry episode includes both low soil wetness and low greenness during the episode and its next three months.', lowThreshold: DRY_THRESHOLD, selected: memoryEventEvidence(analysis, selected), summary: memoryEvidenceSummary(analysis), sensitivity: 'The same rainfall-selected episodes and response windows are checked at proxy thresholds 0.15,0.20,0.25. These checks are descriptive, not confidence levels.' } }, null, 2)
 }
