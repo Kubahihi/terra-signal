@@ -99,6 +99,7 @@
   .relationship-chart-card { padding: 19px; }
 }
 @media (max-width: 450px) {
+  .relationship-mini text, .relationship-scatter text { font-size: 16px; }
   .relationship-view-picker > button { font-size: 10px; padding: 13px 8px; gap: 7px; }
   .relationship-statistics { grid-template-columns: 1fr; }
   .relationship-statistics > div { display: grid; grid-template-columns: 1fr auto; gap: 5px 16px; align-items: center; padding: 16px 19px; }
