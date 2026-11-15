@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
+import { lazy, Suspense, useCallback, useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react'
 import Icon from './components/Icon'
 import MapPicker from './components/MapPicker'
 import SeriesChart from './components/SeriesChart'
@@ -19,12 +19,14 @@ import { useDailyRecord } from './lib/useDailyRecord'
 import type { CalendarSelection, DailyMetric, DailySelection, SeriesResponse, Variable } from './types/api'
 
 const lastYear = new Date().getUTCFullYear() - 1
+const Relationships = lazy(() => import('./components/Relationships'))
 const variableLabels: Record<Variable, string> = { T2M: 'Air temperature', PRECTOTCORR: 'Precipitation' }
 const workspaces = [
   { id: 'explore', label: 'Explore', icon: 'map', title: 'A closer look at a changing Earth.', description: 'Find a place on the map and explore its long-term record.' },
   { id: 'calendar', label: 'Calendar', icon: 'calendar', title: 'Every season tells a story.', description: 'Explore individual months, seasons and departures from the reference.' },
   { id: 'daily', label: 'Daily weather', icon: 'sun', title: 'Look beyond the average.', description: 'Follow hot days, frost, warm nights and stretches without rain.' },
   { id: 'compare', label: 'Compare places', icon: 'compare', title: 'One question. Two places.', description: 'Compare the same period and variable at two points on Earth.' },
+  { id: 'relationships', label: 'Connections', icon: 'relationships', title: 'Explore the connections.', description: 'Connect heat, rainfall, soil wetness and vegetation over time.' },
   { id: 'methods', label: 'Data & methods', icon: 'info', title: 'Follow the evidence.', description: 'Understand the observations, the analysis and its limitations.' },
 ] as const
 type Workspace = typeof workspaces[number]['id']
@@ -37,7 +39,7 @@ function routeFromHash() {
     'analysis-settings': 'explore', 'location-map-panel': 'explore',
     'local-questions': 'calendar', 'daily-extremes': 'daily',
     'daily-place-comparison': 'compare', 'location-comparison': 'compare', 'comparison-heading': 'compare',
-    'data-resources': 'methods',
+    'data-resources': 'methods', 'correlations': 'relationships',
   }
   const workspace = workspaces.find(item => item.id === hash.replace(/^workspace-/, ''))?.id ?? aliases[hash] ?? 'explore'
   return { workspace, hash, comparison: hash === 'location-comparison' || hash === 'comparison-heading' ? 'monthly' as const : 'daily' as const }
@@ -45,6 +47,7 @@ function routeFromHash() {
 
 export default function App() {
   const [workspace, setWorkspace] = useState<Workspace>(() => routeFromHash().workspace)
+  const [connectionsOpened, setConnectionsOpened] = useState(() => routeFromHash().workspace === 'relationships')
   const [scrollTarget, setScrollTarget] = useState(() => routeFromHash().hash)
   const [comparisonView, setComparisonView] = useState<ComparisonView>(() => routeFromHash().comparison)
   const [location, setLocation] = useState<Location>(exampleLocations[0])
@@ -77,6 +80,8 @@ export default function App() {
   const current = matches && !error && !loading ? result : null
   const activeInvestigation = investigation && investigation.location.lat === location.lat && investigation.location.lon === location.lon && investigation.variable === variable && investigation.start === start && investigation.end === end ? investigation : null
   const pickLocation = useCallback((next: Location) => { setLocation(next); setCoordinateError('') }, [])
+
+  useEffect(() => { if (workspace === 'relationships') setConnectionsOpened(true) }, [workspace])
 
   useEffect(() => {
     function followHash() {
@@ -251,7 +256,7 @@ export default function App() {
 
       <div hidden={workspace === 'methods'}>
       <div className="filter-bar" id="analysis-settings" aria-label="Analysis settings">
-        <div className="variable-control" hidden={workspace === 'daily' || workspace === 'compare' && comparisonView === 'daily'}><span className="control-label">Variable</span><div className="segmented" aria-label="Earth system variable">
+        <div className="variable-control" hidden={workspace === 'daily' || workspace === 'relationships' || workspace === 'compare' && comparisonView === 'daily'}><span className="control-label">Variable</span><div className="segmented" aria-label="Earth system variable">
           <button type="button" aria-pressed={variable === 'T2M'} onClick={() => setVariable('T2M')}>Temperature</button>
           <button type="button" aria-pressed={variable === 'PRECTOTCORR'} onClick={() => setVariable('PRECTOTCORR')}>Precipitation</button>
         </div></div>
@@ -267,7 +272,7 @@ export default function App() {
         {workspace !== 'explore' && <button type="button" className="secondary-button choose-on-map" onClick={() => navigate('explore', 'location-map-panel')}><Icon name="map" />Choose on map</button>}
       </div>
       {!validPeriod && <p className="form-error" role="alert">Choose whole years between 1981 and {lastYear}, with the start before the end.</p>}
-      <div className="variable-context" hidden={workspace === 'daily' || workspace === 'compare' && comparisonView === 'daily'}><Icon name="info" /><p><strong>{variable} · {variableInfo[variable].title}.</strong> {variableInfo[variable].definition} <a href="#data-resources">Understand the dataset</a></p></div>
+      <div className="variable-context" hidden={workspace === 'daily' || workspace === 'relationships' || workspace === 'compare' && comparisonView === 'daily'}><Icon name="info" /><p><strong>{variable} · {variableInfo[variable].title}.</strong> {variableInfo[variable].definition} <a href="#data-resources">Understand the dataset</a></p></div>
       </div>
       {activeInvestigation && workspace !== 'methods' && <aside className="investigation-prompt" aria-label="Investigation guide"><strong>{activeInvestigation.question}</strong><p>{activeInvestigation.prompt}</p><div className="guide-actions"><a href={activeInvestigation.focus === 'daily' ? '#daily-extremes' : '#local-questions'}>View the investigation <Icon name="arrow" /></a><button type="button" className="text-button" onClick={() => setInvestigation(null)}>Dismiss guide</button></div></aside>}
 
@@ -326,6 +331,9 @@ export default function App() {
         <div className="comparison-workspace-toolbar"><div className="segmented" aria-label="Comparison resolution"><button type="button" aria-pressed={comparisonView === 'daily'} onClick={() => { setComparisonView('daily'); navigate('compare', 'daily-place-comparison') }}><Icon name="sun" />Daily extremes</button><button type="button" aria-pressed={comparisonView === 'monthly'} onClick={() => { setComparisonView('monthly'); navigate('compare', 'location-comparison') }}><Icon name="calendar" />Monthly trends</button></div><button type="button" className="secondary-button" onClick={() => chooseOnMap('b')}><Icon name="map" />Edit map points</button></div>
         <div hidden={comparisonView !== 'daily'}><DailyComparison standalone enabled={comparisonEnabled} onToggle={toggleComparison} onChooseMapPoint={chooseOnMap} location={location} comparisonLocation={comparisonLocation} onSelect={setComparisonLocation} primary={dailyRecord} metric={dailyMetric} onMetric={setDailyMetric} year={selectedDailyYear} onYear={setDailyYear} start={start} end={end} validPeriod={validPeriod} /></div>
         <div hidden={comparisonView !== 'monthly'}><LocationComparison standalone enabled={comparisonEnabled} onToggle={toggleComparison} location={location} comparisonLocation={comparisonLocation} onSelect={setComparisonLocation} primary={current} primaryLoading={loading} variable={variable} start={start} end={end} validPeriod={validPeriod} /></div>
+      </section>
+      <section className="workspace-panel" id="workspace-relationships" role="tabpanel" aria-labelledby="tab-relationships" tabIndex={0} hidden={workspace !== 'relationships'}>
+        {(connectionsOpened || workspace === 'relationships') && <Suspense fallback={<p className="workspace-loading" role="status">Loading connections…</p>}><Relationships visible={workspace === 'relationships'} location={location} start={start} end={end} validPeriod={validPeriod} record={dailyRecord} onSelect={pickLocation} onPeriod={(first, last) => { setStart(first); setEnd(last) }} /></Suspense>}
       </section>
       <section className="workspace-panel" id="workspace-methods" role="tabpanel" aria-labelledby="tab-methods" tabIndex={0} hidden={workspace !== 'methods'}>
       <DataResources />

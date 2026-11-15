@@ -226,3 +226,136 @@ Reference: https://power.larc.nasa.gov/docs/services/api/temporal/monthly/
 The browser calls `/api/*`. Vite forwards these requests to `127.0.0.1:8000`.
 For separate production hosts, set `VITE_API_BASE_URL` at frontend build time and
 allow the exact frontend origin in backend `CORS_ORIGINS`.
+
+## `POST /api/relationships`
+
+Computes a descriptive relationship from caller-supplied monthly observations;
+it does not download data or independently authenticate the supplied provenance.
+The Relationships workspace combines matching weather, soil or vegetation
+records before calling this endpoint.
+
+| Request field | Contract |
+| --- | --- |
+| `latitude`, `longitude` | Finite coordinates within normal geographic bounds |
+| `start`, `end` | Ordered complete calendar years, from 1981 through the last complete year |
+| `x`, `y` | Objects with nonempty `name`, `unit` and `observations` |
+| `observations` | At most 6,000 `{date, value}` objects per series; unique first-of-month dates; finite numeric values or null |
+| `lag_months` | 0, 1 or 2; Y follows X by this many calendar months; default 0 |
+| `month` | X calendar month 1–12, or null for all months; default null |
+| `detrend` | Boolean; default true; remove linear elapsed-time trends jointly with calendar-month effects |
+
+Values are bounded to absolute magnitude 1e12 for numerical safety. Duplicate
+dates, non-month-start dates, booleans in numeric observations, nonfinite values,
+unknown fields, invalid intervals and excessive arrays return 422. Rows outside
+the requested interval are excluded with a warning. A missing month is never
+replaced with zero or shifted to the next available row.
+
+For example, `month: 6, lag_months: 1` compares June X with July Y in each
+available year. Both dates must be inside the selected interval; a December
+lag that would enter a later, unrequested year is not an expected pair.
+
+The response echoes point, period, lag and month; `detrended` records the selected
+adjustment. It contains `x_name`, `y_name`, `x_unit`, `y_unit`, `method`,
+`seasonality`, `warnings`, and:
+
+| Response field | Meaning |
+| --- | --- |
+| `pairs` | Sorted `{x_date, y_date, x_raw, y_raw, x, y}`; raw values and seasonal/trend-adjusted values remain separate |
+| `n_pairs`, `n_years` | Matched pairs and distinct X calendar years |
+| `expected_pairs`, `coverage` | Possible calendar pairs within the requested window and matched fraction from 0 to 1 |
+| `reference_start`, `reference_end` | Actual paired-cohort span, from the first X year through the last Y year; null without pairs |
+| `pearson_r` | Descriptive coefficient from -1 to 1, or null when requirements are unmet or adjusted variation is unusable |
+| `p_value`, `ci95` | Always null; no independent-observation significance test or interval is reported |
+
+Reporting `r` requires five distinct years, at least ten all-month pairs or five
+same-month annual pairs, 80% of expected pairs, and at least three observations
+in every included calendar-month cohort. Constant or numerically negligible
+adjusted variation produces null, not a fabricated zero correlation.
+
+The browser checks returned point, period, settings, names, units, original
+values and complete calendar pairing against the selected dataset before
+display/export. CSV exports retain both source chains, spatial supports,
+retrieval dates/origins, raw and adjusted values, missing-pair rows, settings,
+coverage and the descriptive-inference limitation. Monthly precipitation totals
+are obtained from `PRECTOTCORR` mm/day multiplied by actual calendar-month length,
+including leap days, before the relationship is calculated.
+
+## `GET /api/soil`
+
+Query fields are `lat`, `lon`, `start`, `end`, and optional `refresh`. Coordinates
+must be valid; years must be ordered, complete and from 1981 onward. Defaults
+cover 1981 through the last complete year. Unlike daily and vegetation requests,
+one monthly soil request can cover the full selected interval.
+
+The response contains `latitude`, `longitude`, `start`, `end`,
+`parameter: "GWETROOT"`, `unit: "1"`, ordered monthly `series` objects
+(`date`, `value`), `source`, `source_url`, `retrieved_at`, `data_origin`
+(`live` or `cache`) and `warnings`. It represents model root-zone soil wetness
+on a dimensionless 0–1 scale, not volumetric moisture in m3/m3. The service
+accepts only NASA metadata unit `1`; fill, malformed, nonfinite and out-of-range
+observations become null. Annual month-13 summaries are excluded and missing
+calendar months remain gaps.
+
+The upstream request uses NASA POWER monthly `GWETROOT`, community `AG`.
+Original responses use a separate `soil` cache namespace with a 24-hour fresh
+period. `refresh=true` bypasses fresh reuse. Downloads have bounded timeouts,
+at most two concurrent slots and one retry for transient HTTP/network errors.
+A failed refresh can reuse a valid older original response, preserving its
+retrieval time and adding an explicit warning. No monthly-weather snapshot or
+simulated fallback substitutes for soil data. Without usable live or saved
+soil data the route returns 503; invalid query inputs return 422.
+
+Reference: [NASA POWER hydrology and soil-wetness definitions](https://power.larc.nasa.gov/docs/methodology/data/sources_hydrology/).
+
+## `GET /api/vegetation`
+
+Query fields are `lat`, `lon`, `start`, `end`, and optional `refresh`. A request
+covers one to five ordered, complete calendar years from 2001 through the last
+complete year; invalid queries return 422. The browser combines sequential
+five-year requests for a longer selection and verifies one consistent footprint
+and collection. Earlier selected months have no observations in this API path.
+
+The provider requests public NASA ORNL DAAC Terra `MOD13Q1` subsets, at most ten
+16-day acquisition dates per upstream request and two concurrent downloads.
+Requested extent is 1 km above/below and left/right of the point; actual returned
+pixel geometry is reported, rather than assuming an exact fixed area. Original
+JSON batches are cached for 24 hours under a separate `vegetation` namespace;
+a failed refresh may reuse a valid saved batch with its original provenance.
+No Earthdata credentials are sent to this public subset endpoint.
+
+The response includes point/period, `product: "MOD13Q1"`, `unit: "NDVI"`,
+`series` objects (`date`, `value`, `available_composites`, `expected_composites`),
+`spatial_support`, `pixel_size_m`, `nrows`, `ncols`, `collections`, `source`,
+`source_url`, `sources`, `retrieved_at`, `data_origin` and `warnings`.
+Every entry in `sources` retains its original request URL, retrieval time and
+live/cache origin. The summary retrieval time is the oldest source time;
+summary origin `live` means at least one batch is live, not that every batch
+was newly retrieved. Different grids or collections cannot be silently merged.
+
+Only paired NDVI/quality bands from the same collection are accepted. Raw integer
+NDVI in -2000..10000 is scaled once by 0.0001. A pixel must have
+`pixel_reliability=0`; at least half the subset pixels must pass. Monthly values
+are equal-weight means of every scheduled 16-day composite whose nominal start
+date lies in that month. If any scheduled composite is absent or fails the
+area-quality threshold, the month stays null. This is a composite-start monthly
+proxy, not a day-weighted calendar-month NDVI product.
+
+During integration verification the public ORNL service returned upstream 503
+responses. Availability can change; the application offers retry and reports
+503 when neither live data nor a valid matching cache is available. It does not
+represent the outage as permanent or substitute weather observations for NDVI.
+
+An alternative browser import accepts the original ORNL
+`filtered_scaled_250m_16_days_NDVI.csv`, with the supported `_landcovermask`
+suffix. It validates product/band, collection, acquisition/processing dates,
+subset coordinates, declared pixel rectangle, scaled values and quality gaps.
+The file remains user-provided: its SHA-256 identifies the imported bytes but
+cannot authenticate NASA origin or earlier quality filtering. Import time and
+filename are retained; an unknown original retrieval date is not invented.
+These records keep `data_origin: import` in browser provenance, distinct from
+the API's live/cache origins. The original import stays in browser memory for
+reprocessing the same point over another period.
+
+References: [ORNL MODIS web service](https://modis.ornl.gov/data/modis_webservice.html),
+[MOD13Q1 specification and quality fields](https://ladsweb.modaps.eosdis.nasa.gov/filespec/MODIS/61/MOD13Q1),
+[ORNL export documentation](https://modis.ornl.gov/documentation.html).

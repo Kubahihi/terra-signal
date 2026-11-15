@@ -26,7 +26,7 @@ The complete analysis and NASA source URLs can be downloaded under the cards;
 live chart badges retain their four-test correction per point.
 
 The workspace is organized into Explore, Calendar, Daily weather, Compare places,
-and Data & methods tabs. The location and period are shared, and switching tabs
+Connections, and Data & methods tabs. The location and period are shared, and switching tabs
 preserves chart selections, loaded daily records and map zoom. Links and browser
 Back/Forward open the corresponding workspace.
 
@@ -82,6 +82,39 @@ NOAA, KNMI and Canadian resources are available in **Data & methods**. NASA POWE
 is the connected provider; the other resources open external tools and are not
 presented as implemented data integrations. The NASA non-endorsement and
 third-party data-use notice is included.
+
+## Connections between variables
+
+**Connections** investigates overlapping hot and dry days, temperature versus
+rainfall, rainfall versus root-zone soil wetness, and rainfall versus vegetation.
+The compound index counts days with Tmax > 30 C and precipitation < 1 mm/day;
+exact annual counts require both observations on every calendar day. Partial
+records retain observed lower bounds and never become complete annual values.
+
+Soil wetness uses real NASA POWER `GWETROOT` data on the MERRA-2 grid, with original
+responses cached separately. This dimensionless model wetness fraction is not
+volumetric water content. Weather and soil come from the same modelling system.
+
+Relationships can pair the same month or Y one/two calendar months after X.
+Choose a single month across years or all monthly departures, and optionally
+remove linear trends jointly with month effects. Pearson r is descriptive:
+no independent-observation p-value, significance badge or causal claim is made.
+Matched/raw CSV exports retain both source chains, conversion rules, settings,
+coverage, adjusted values and missing observations.
+
+MODIS MOD13Q1 NDVI can be requested through the public ORNL DAAC subset API in
+five-year batches. Only good-quality pixels and complete composite-start-month
+coverage enter the monthly proxy. The smaller MODIS footprint is labelled
+separately from the weather grid. South Moravia and Medicine Hat are location
+shortcuts, not preloaded satellite findings. During implementation ORNL requests
+returned 503/timeouts, so a successful live satellite retrieval remains unverified.
+The interface reports outages without fabricating vegetation data.
+
+An original ORNL `filtered_scaled_250m_16_days_NDVI.csv` export can also be imported
+locally. The parser checks product, collection, scaled values, coordinates and
+quality gaps; it retains the file SHA-256 and labels the origin as user supplied,
+not independently authenticated. The original text stays in browser memory to
+support period changes. ORNL export tools may require an Earthdata Login.
 
 ## Project layout
 

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { dailyExamples, exampleAnalysis, findingLocation, type DailyExample } from '../lib/dailyExamples'
 import { formatRate } from '../lib/evidence'
 import Icon from './Icon'
@@ -36,4 +37,3 @@ export default function DailyExampleStarter({ onStart }: { onStart: (example: Da
     <details className="daily-example-notes"><summary>About these saved findings <Icon name="chevron" /></summary><div><p>These reference rates come from a NASA POWER analysis saved on {exampleAnalysis.date}, using complete annual indices for {exampleAnalysis.start}–{exampleAnalysis.end}. All displayed findings passed Holm correction across {exampleAnalysis.familySize} tests: four indices at {exampleAnalysis.candidateCount} prespecified example points. The selection is exploratory.</p><p>Opening an example loads its daily records and recalculates the charts. Chart badges apply Holm correction separately across four indices per point; they do not test whether the two places have different slopes. Data revisions can change the recalculated rates. Warm nights use daily minimum temperature as a proxy; the results describe surrounding model grid cells.</p><p><button type="button" className="text-button" disabled={downloading} onClick={downloadReference}>{downloading ? 'Downloading reference analysis…' : 'Download the reference analysis & NASA sources'} <Icon name="download" /></button></p>{downloadError && <p role="alert">{downloadError}</p>}<p role="status">{downloadMessage}</p></div></details>
   </section>
 }
-import { useState } from 'react'

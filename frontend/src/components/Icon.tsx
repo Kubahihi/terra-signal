@@ -1,9 +1,12 @@
 import type { ReactNode } from 'react'
 
-type IconName = 'globe' | 'external' | 'pin' | 'refresh' | 'download' | 'chevron' | 'arrow' | 'info' | 'target' | 'map' | 'calendar' | 'sun' | 'compare'
+type IconName = 'globe' | 'external' | 'pin' | 'refresh' | 'download' | 'chevron' | 'arrow' | 'info' | 'target' | 'map' | 'calendar' | 'sun' | 'compare' | 'relationships' | 'leaf' | 'water'
 
 export default function Icon({ name }: { name: IconName }) {
   const paths: Record<IconName, ReactNode> = {
+    relationships: <><path d="M4 3v17h17" /><circle cx="8" cy="14" r="1.5" /><circle cx="12" cy="10" r="1.5" /><circle cx="17" cy="7" r="1.5" /><path d="m6 17 13-13" /></>,
+    leaf: <><path d="M19 3C7 2 2 8 5 15s14 7 14-12Z" /><path d="M3 21 15 9m-7 7v-5m4 1h5" /></>,
+    water: <path d="M12 2S5 10 5 15a7 7 0 0 0 14 0c0-5-7-13-7-13Zm-3 14c0 2 1 3 3 3" />,
     map: <><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Zm6-3v15m6-12v15" /></>,
     calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M7 3v4m10-4v4M3 11h18m-14 4h3m4 0h3m-10 3h3" /></>,
     sun: <><circle cx="12" cy="12" r="4" /><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5" /></>,

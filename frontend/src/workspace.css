@@ -27,6 +27,7 @@
 .selection-summary .icon { width: 15px; height: 15px; }
 .selection-summary > span:last-child { padding: 6px 9px; color: #627480; background: #eaf0f2; border-radius: 4px; font-variant-numeric: tabular-nums; }
 .workspace-panel { min-width: 0; min-height: 45vh; padding-bottom: 16px; }
+.workspace-loading { padding: 30px 20px; color: var(--muted); font-size: 12px; }
 .workspace-panel > .local-questions, .workspace-panel > .daily-weather, .workspace-panel > .resources-section { border-top: 0; padding-top: 10px; }
 .workspace-panel .support-section-heading { margin-bottom: 22px; }
 .workspace-panel .support-section-heading h2 { font-size: 22px; }

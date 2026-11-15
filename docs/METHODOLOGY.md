@@ -237,9 +237,12 @@ questions rather than promise a particular outcome.
 Users can also inspect winter means/seasonal totals, compare two locations and change the analysis
 period, while avoiding selection of a window merely to obtain a small p-value.
 
-The challenge's additional portals are external exploration resources. Only NASA
-POWER is connected to the time-series pipeline. Their use terms and access
-requirements must be checked independently. POWER meteorology provenance:
+The challenge's additional portals are external exploration resources. NASA
+POWER supplies the weather and soil-wetness pipelines. The Relationships
+workspace separately supports MOD13Q1 through the public ORNL subset service
+and explicitly labelled user-provided filtered CSV imports. Other resource links
+remain external tools. Their use terms and access requirements must be checked
+independently. POWER meteorology provenance:
 https://power.larc.nasa.gov/docs/methodology/data/sources_meteorology/
 
 Reference: https://www.statsmodels.org/stable/generated/statsmodels.regression.linear_model.OLSResults.get_robustcov_results.html
@@ -256,3 +259,135 @@ Reference: https://www.statsmodels.org/stable/generated/statsmodels.regression.l
 Automated checks cover a known trend with strong seasonal variation, seasonality
 without a trend, constant data, short records, missing dates, metadata units,
 annual-summary exclusion, snapshot matching/checksums, and an upstream outage.
+
+## Compound hot and dry days
+
+The Relationships workspace derives a daily coincidence indicator from the
+existing NASA POWER daily records: Tmax strictly greater than 30 C **and**
+precipitation strictly less than 1 mm/day on the same LST date. Exactly 30 C
+or 1 mm/day does not satisfy that threshold. This describes a hot day with
+little precipitation; it is not a soil-moisture measurement, a drought-duration
+index, a crop-impact estimate or a causal attribution.
+
+An exact annual count requires valid paired Tmax and precipitation on every
+365/366 calendar date, including leap day. With incomplete paired coverage,
+`value` remains null and the observed count is a lower bound, without scaling
+or extrapolation. A zero count is distinguished from an absent response or
+unknown paired observations. Conflicting duplicate dates are unusable and
+cannot increase coverage. Annual and raw-daily CSVs retain thresholds, LST,
+paired coverage, missing values and original daily source chains.
+
+Compound counts are descriptive. This additional index is not inserted into
+the existing four-index Holm family and receives no significance badge or
+independent compound-index trend test.
+
+## Monthly relationships and time lags
+
+Relationships match X with Y zero, one or two **calendar months** later. A
+selected calendar month refers to X: June with lag one pairs June X with July Y
+across years. Both dates must be inside the requested interval. Missing dates
+remain gaps; matching never uses row offsets that could shift later observations
+into an earlier missing month. Precipitation rates are converted to totals using
+actual calendar-month lengths before analysis.
+
+The seasonal reference uses only common matched observations, with a separate
+mean for each X calendar-month cohort and its corresponding Y cohort. This is
+an analysis-dependent reference, not the fixed 1991–2020 temperature normal.
+Changing the period, lag or missingness can change it. The actual paired-cohort
+years, requested window, expected calendar pairs and matched coverage are
+reported and exported.
+
+Without detrending, Pearson's coefficient is calculated from those month-centered
+values. With detrending, the linear time effect is removed jointly with month
+fixed effects. Equivalently, for each paired calendar-month cohort, center X, Y
+and actual elapsed calendar-month time, then regress centered X and centered Y
+on that centered time and correlate their residuals. A fixed lag adds a constant
+to Y's time coordinate and does not change the within-cohort centered time.
+This preserves real spacing across gaps and does not reintroduce a residual
+seasonal cycle by regressing monthly anomalies on uncentered calendar time.
+
+A descriptive `r` is published only with at least five distinct X years, ten
+all-month pairs or five same-month annual pairs, 80% of possible calendar pairs
+in the requested interval, and at least three matched observations in every
+included calendar-month cohort. Constant or numerically negligible adjusted
+variation makes correlation undefined and leaves `r` null, not zero. These
+minimums are application safeguards, not guarantees of reliability or
+representativeness; missingness can bias the relationship.
+
+No correlation p-value or confidence interval is published. Monthly climate
+records are serially dependent, and independent-observation Pearson inference
+would not account for this dependence or searches over months, lags, regions
+and time windows. A coefficient near zero does not rule out nonlinear or
+season-dependent relationships. A nonzero coefficient does not demonstrate
+causation. Scatter points, raw and adjusted values and complete source metadata
+remain available so the selected relationship can be inspected and reproduced.
+
+References: [NOAA correlation interpretation and caveats](https://www.psl.noaa.gov/data/atmoswrit/corr/caveats/),
+[SciPy Pearson definition and independent-observation inference assumptions](https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.pearsonr.html).
+
+## Root-zone soil wetness and model dependence
+
+`GWETROOT` is the NASA POWER model root-zone **soil-wetness fraction** on its
+original dimensionless 0–1 scale. It is not volumetric water content in m3/m3
+and is not an in-situ field measurement. Unsupported units are rejected;
+fill, nonfinite, malformed and out-of-range values remain missing. Monthly
+calendar gaps are preserved and annual month-13 summaries are excluded.
+
+The monthly record describes a coarse reanalysis grid cell around the point.
+Weather and soil wetness share land-atmosphere model inputs. Their correlation
+is therefore useful as an exploratory description of modeled behavior, not
+independent observational validation or proof that one variable caused the
+other. A warm/rainless day and low modeled root-zone wetness are separate
+quantities and are not substituted for each other.
+
+Reference: [NASA POWER hydrology definitions and source distinctions](https://power.larc.nasa.gov/docs/methodology/data/sources_hydrology/).
+
+## MODIS vegetation aggregation and imported provenance
+
+The live provider uses Terra MOD13Q1 nominal 250 m, 16-day NDVI composites from
+the public ORNL DAAC subset service, beginning with complete years from 2001.
+NDVI is vegetation greenness; it is not crop yield or a direct measurement of
+plant health, species diversity or drought damage. Each subset's actual pixel
+rectangle, pixel size and collection are retained.
+
+For the API path, matching NDVI and pixel-reliability bands must belong to one
+collection and grid. Only reliability flag zero (good) and integer NDVI from
+-2000 through 10000 are accepted; NDVI is scaled once by 0.0001. At least 50%
+of subset pixels must pass to form an equal-pixel-weight composite mean.
+Marginal-quality, cloudy, snow/ice, fill and malformed pixels are excluded.
+
+Monthly NDVI is the equal-weight mean of **all scheduled** 16-day composite
+means whose nominal start dates lie in that calendar month. Every scheduled
+composite must be received and pass the pixel-coverage requirement; otherwise
+the month is missing. This composite-start proxy is not a true, day-weighted
+calendar-month average and does not split a composite at a month boundary.
+Collection or grid changes are rejected rather than silently combined.
+
+The local MODIS subset and the much larger POWER weather grid do not measure
+identical areas. Their relationship is an exploratory comparison around a
+point. Different spatial supports, land cover, cloud/snow-dependent missingness,
+temporal compositing and selected reference periods can affect the coefficient.
+These limits remain explicit even when both source chains are NASA products.
+
+The public ORNL service returned 503 during integration verification; this is
+an observed availability limit, not a claim that the product is permanently
+unavailable. A failed live request may use only a valid saved original subset
+with its original retrieval metadata. No synthetic or weather-derived NDVI is
+used. The browser also accepts the documented ORNL filtered/scaled pixel CSV
+format, including the supported land-cover-mask variant.
+
+For imports, already-scaled numeric pixels in -0.2..1 are retained and `F` is
+treated as a rejected pixel. The same 50% composite and complete-month schedule
+rules apply. Product, band, collection, subset geometry/location, acquisition and
+processing metadata and pixel values are validated. However, these checks cannot
+independently authenticate file origin or the provider's previous filtering.
+Imported records remain labelled `import`, with filename, import time and a
+SHA-256 of the original file bytes; a hash identifies the file, not a trusted
+NASA provenance chain. Unknown original retrieval times remain unknown. The
+original CSV is kept in browser memory for reprocessing when the selected
+period changes at the same point; provenance is retained in exports.
+
+References: [NASA MODIS vegetation product](https://modis.gsfc.nasa.gov/data/dataprod/mod13.php),
+[MOD13Q1 file specification and quality flags](https://ladsweb.modaps.eosdis.nasa.gov/filespec/MODIS/61/MOD13Q1),
+[ORNL MODIS subset web service](https://modis.ornl.gov/data/modis_webservice.html),
+[ORNL filtered export documentation](https://modis.ornl.gov/documentation.html).

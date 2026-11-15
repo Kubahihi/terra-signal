@@ -8,6 +8,9 @@ from .config import CORS_ORIGINS, PROJECT_ROOT
 from .routes.series import router as series_router
 from .routes.calendar import router as calendar_router
 from .routes.daily import router as daily_router
+from .routes.relationships import router as relationships_router
+from .routes.vegetation import router as vegetation_router
+from .routes.soil import router as soil_router
 
 app = FastAPI(
     title="TerraSignal API",
@@ -32,6 +35,9 @@ def health() -> dict[str, str]:
 app.include_router(series_router)
 app.include_router(calendar_router)
 app.include_router(daily_router)
+app.include_router(relationships_router)
+app.include_router(vegetation_router)
+app.include_router(soil_router)
 
 # A production build can be served by the same app, without a second hostname.
 frontend_build = PROJECT_ROOT / "frontend" / "dist"
