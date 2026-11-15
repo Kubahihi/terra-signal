@@ -1,8 +1,10 @@
 # API contract
 
 Backend models: `backend/app/schemas.py`. Browser types: `frontend/src/types/api.ts`.
-Update both when changing this contract. Frontend owns presentation; backend owns
-data cleaning, units, aggregation, and statistical results.
+Update both when changing this contract. The backend normalizes provider data
+and computes the existing trend and relationship responses. The offline-capable
+Memory workspace computes its separately documented descriptive event ranks in
+the browser from these normalized observations; it adds no HTTP analysis endpoint.
 
 ## Available now
 

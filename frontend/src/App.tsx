@@ -21,6 +21,7 @@ const lastYear = new Date().getUTCFullYear() - 1
 const Relationships = lazy(() => import('./components/Relationships'))
 const TrendAtlas = lazy(() => import('./components/TrendAtlas'))
 const DataResources = lazy(() => import('./components/DataResources'))
+const LandscapeMemory = lazy(() => import('./components/LandscapeMemory'))
 const variableLabels: Record<Variable, string> = { T2M: 'Air temperature', PRECTOTCORR: 'Precipitation' }
 const workspaces = [
   { id: 'atlas', label: 'Map', icon: 'globe' },
@@ -29,6 +30,7 @@ const workspaces = [
   { id: 'daily', label: 'Days', icon: 'sun' },
   { id: 'compare', label: 'Compare', icon: 'compare' },
   { id: 'relationships', label: 'Connections', icon: 'relationships' },
+  { id: 'memory', label: 'Landscape memory', icon: 'water' },
   { id: 'methods', label: 'Data', icon: 'info' },
 ] as const
 type Workspace = typeof workspaces[number]['id']
@@ -39,6 +41,7 @@ const primaryWorkspaces = [
   { id: 'atlas', label: 'Map', icon: 'globe' },
   { id: 'analysis', label: 'Explore', icon: 'relationships' },
   { id: 'relationships', label: 'Connections', icon: 'leaf' },
+  { id: 'memory', label: 'Memory', icon: 'water' },
   { id: 'methods', label: 'Data', icon: 'info' },
 ] as const
 type PrimaryWorkspace = typeof primaryWorkspaces[number]['id']
@@ -52,7 +55,7 @@ function routeFromHash() {
     'analysis-settings': 'explore', 'location-map-panel': 'explore',
     'local-questions': 'calendar', 'daily-extremes': 'daily',
     'daily-place-comparison': 'compare', 'location-comparison': 'compare', 'comparison-heading': 'compare',
-    'data-resources': 'methods', 'correlations': 'relationships',
+    'data-resources': 'methods', 'correlations': 'relationships', 'landscape-memory': 'memory',
   }
   const workspace = workspaces.find(item => item.id === hash.replace(/^workspace-/, ''))?.id ?? aliases[hash] ?? 'atlas'
   return { workspace, hash, comparison: hash === 'location-comparison' || hash === 'comparison-heading' ? 'monthly' as const : 'daily' as const }
@@ -62,6 +65,7 @@ export default function App() {
   const [workspace, setWorkspace] = useState<Workspace>(() => routeFromHash().workspace)
   const [atlasOpened, setAtlasOpened] = useState(() => routeFromHash().workspace === 'atlas')
   const [connectionsOpened, setConnectionsOpened] = useState(() => routeFromHash().workspace === 'relationships')
+  const [memoryOpened, setMemoryOpened] = useState(() => routeFromHash().workspace === 'memory')
   const [scrollTarget, setScrollTarget] = useState(() => routeFromHash().hash)
   const [guidedExamplesOpen, setGuidedExamplesOpen] = useState(() => routeFromHash().hash === 'daily-examples')
   const [comparisonView, setComparisonView] = useState<ComparisonView>(() => routeFromHash().comparison)
@@ -93,7 +97,7 @@ export default function App() {
   const selectedDailyYear = Math.max(start, Math.min(end, dailyYear))
   const activeWorkspace = workspaces.find(item => item.id === workspace)!
   const primaryWorkspace: PrimaryWorkspace = isAnalysisWorkspace(workspace) ? 'analysis' : workspace
-  const monthlyActive = workspace !== 'atlas'
+  const monthlyActive = isAnalysisWorkspace(workspace) || workspace === 'relationships'
   const matches = result && result.latitude === location.lat && result.longitude === location.lon && result.variable === variable && result.start === start && result.end === end
   const current = matches && !error && !loading ? result : null
   const activeInvestigation = investigation && investigation.location.lat === location.lat && investigation.location.lon === location.lon && investigation.variable === variable && investigation.start === start && investigation.end === end ? investigation : null
@@ -101,6 +105,7 @@ export default function App() {
 
   useEffect(() => { if (workspace === 'relationships') setConnectionsOpened(true) }, [workspace])
   useEffect(() => { if (workspace === 'atlas') setAtlasOpened(true) }, [workspace])
+  useEffect(() => { if (workspace === 'memory') setMemoryOpened(true) }, [workspace])
 
   useEffect(() => {
     function followHash() {
@@ -298,7 +303,7 @@ export default function App() {
       <nav aria-label="Workspace navigation"><div className="workspace-tabs" role="tablist" aria-label="Main workspaces">
         {primaryWorkspaces.map((item, index) => <a key={item.id} id={`primary-${item.id}`} role="tab" href={`#${workspaceDestination(item.id === 'analysis' ? lastAnalysis.current : item.id)}`} aria-selected={primaryWorkspace === item.id} aria-controls={`workspace-${item.id}`} tabIndex={primaryWorkspace === item.id ? 0 : -1} onKeyDown={event => navigatePrimaryWithKeys(event, index)} onClick={event => { event.preventDefault(); navigatePrimary(item.id) }}><Icon name={item.icon} /><span>{item.label}</span></a>)}
       </div></nav>
-      <div className="source-status" role="status" aria-label="Analysis service status"><span className={`status-dot ${workspace === 'atlas' ? 'online' : service}`} />{workspace === 'atlas' ? 'Saved data' : service === 'online' ? 'Connected' : service === 'checking' ? 'Connecting…' : 'Offline'}</div>
+      <div className="source-status" role="status" aria-label={workspace === 'memory' ? 'Workspace status' : 'Analysis service status'}><span className={`status-dot ${workspace === 'atlas' || workspace === 'memory' ? 'online' : service}`} />{workspace === 'atlas' ? 'Saved data' : workspace === 'memory' ? 'Local analysis' : service === 'online' ? 'Connected' : service === 'checking' ? 'Connecting…' : 'Offline'}</div>
     </header>
 
     <main id="workspace-start">
@@ -308,7 +313,7 @@ export default function App() {
       })}</div></nav>
       {workspace !== 'atlas' && <h1 className="sr-only">{activeWorkspace.label}</h1>}
 
-      <div hidden={workspace === 'methods' || workspace === 'atlas'}>
+      <div hidden={workspace === 'methods' || workspace === 'atlas' || workspace === 'memory'}>
       <div className="filter-bar" id="analysis-settings" aria-label="Analysis settings">
         <div className="variable-control" hidden={workspace === 'daily' || workspace === 'relationships' || workspace === 'compare' && comparisonView === 'daily'}><span className="control-label">Variable</span><div className="segmented" aria-label="Earth system variable">
           <button type="button" aria-pressed={variable === 'T2M'} onClick={() => setVariable('T2M')}>Temperature</button>
@@ -328,7 +333,7 @@ export default function App() {
       {!validPeriod && <p className="form-error" role="alert">Choose whole years between 1981 and {lastYear}, with the start before the end.</p>}
       <details className="variable-help" hidden={workspace === 'daily' || workspace === 'relationships' || workspace === 'compare' && comparisonView === 'daily'}><summary>About {variableInfo[variable].title.toLowerCase()} <Icon name="chevron" /></summary><p><strong>{variable}.</strong> {variableInfo[variable].definition} <a href="#data-resources">Data details</a></p></details>
       </div>
-      {activeInvestigation && workspace !== 'methods' && workspace !== 'atlas' && <aside className="investigation-prompt" aria-label="Investigation guide"><strong>{activeInvestigation.question}</strong><p>{activeInvestigation.prompt}</p><div className="guide-actions"><a href={activeInvestigation.focus === 'daily' ? '#daily-extremes' : '#local-questions'}>View the investigation <Icon name="arrow" /></a><button type="button" className="text-button" onClick={() => setInvestigation(null)}>Dismiss guide</button></div></aside>}
+      {activeInvestigation && isAnalysisWorkspace(workspace) && <aside className="investigation-prompt" aria-label="Investigation guide"><strong>{activeInvestigation.question}</strong><p>{activeInvestigation.prompt}</p><div className="guide-actions"><a href={activeInvestigation.focus === 'daily' ? '#daily-extremes' : '#local-questions'}>View the investigation <Icon name="arrow" /></a><button type="button" className="text-button" onClick={() => setInvestigation(null)}>Dismiss guide</button></div></aside>}
 
       <section className="workspace-panel" id="workspace-atlas" role="tabpanel" aria-labelledby="primary-atlas" tabIndex={0} hidden={workspace !== 'atlas'}>
         {(atlasOpened || workspace === 'atlas') && <Suspense fallback={<p className="workspace-loading" role="status">Loading the trend map…</p>}><TrendAtlas visible={workspace === 'atlas'} onOpenAnalysis={openAtlasComparison} /></Suspense>}
@@ -395,6 +400,9 @@ export default function App() {
       </div>
       <section className="workspace-panel" id="workspace-relationships" role="tabpanel" aria-labelledby="primary-relationships" tabIndex={0} hidden={workspace !== 'relationships'}>
         {(connectionsOpened || workspace === 'relationships') && <Suspense fallback={<p className="workspace-loading" role="status">Loading connections…</p>}><Relationships visible={workspace === 'relationships'} location={location} start={start} end={end} validPeriod={validPeriod} record={dailyRecord} onSelect={pickLocation} onPeriod={(first, last) => { setStart(first); setEnd(last) }} /></Suspense>}
+      </section>
+      <section className="workspace-panel" id="workspace-memory" role="tabpanel" aria-labelledby="primary-memory" tabIndex={0} hidden={workspace !== 'memory'}>
+        {(memoryOpened || workspace === 'memory') && <Suspense fallback={<p className="workspace-loading" role="status">Loading landscape memory…</p>}><LandscapeMemory visible={workspace === 'memory'} location={location} onChoosePlace={() => navigate('explore', 'location-map-panel')} /></Suspense>}
       </section>
       <section className="workspace-panel" id="workspace-methods" role="tabpanel" aria-labelledby="primary-methods" tabIndex={0} hidden={workspace !== 'methods'}>
         {workspace === 'methods' && <Suspense fallback={<p className="workspace-loading" role="status">Loading data and methods…</p>}><DataResources /></Suspense>}

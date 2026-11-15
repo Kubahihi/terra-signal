@@ -540,3 +540,69 @@ References: [Planetary Computer MODIS collection](https://planetarycomputer.micr
 [MOD13Q1 file specification and quality flags](https://ladsweb.modaps.eosdis.nasa.gov/filespec/MODIS/61/MOD13Q1),
 [ORNL MODIS subset web service](https://modis.ornl.gov/data/modis_webservice.html),
 [ORNL filtered export documentation](https://modis.ornl.gov/documentation.html).
+
+## Landscape memory: exploratory episode reconstruction
+
+Memory uses normalized monthly observations from the existing providers. This
+separate deterministic analysis runs in the browser so that the saved case and
+exported evidence remain usable without an analysis server. The algorithm version
+is `landscape-memory-v1`; it is not a new trend test or an attribution model.
+
+Rainfall rates are converted to monthly totals using actual month lengths,
+including leap days. A three-month rainfall total exists only when all three
+calendar months exist, including across a year boundary. Soil is dimensionless
+NASA POWER GWETROOT; vegetation is quality-filtered Terra MOD13Q1 collection 061
+NDVI. The original product's pixel and composite quality checks remain in force.
+
+For a target observation, the reference contains the same calendar month in all
+other years of the declared record. Rainfall compares windows with the same
+ending calendar month and no overlapping source months. The descriptive rank is
+`(reference values below target + 0.5 * ties) / available reference values`.
+At least ten valid reference years and a nonconstant reference are required.
+The original observations remain available even when their rank is withheld.
+Per-month reference counts are retained. References with less than 80% of their
+eligible years generate a warning, rather than invented quality-filtered values.
+Ranks are not significance levels, future probabilities or a complete climate
+normal. Selective quality gaps can bias them. No detrending is applied here.
+
+A candidate dry episode contains at least two consecutive ending months whose
+three-month rainfall ranks are at most 0.20. Its start includes the first
+window's two preceding months; its end is the last dry window's ending month.
+Overlapping candidate periods are merged. The anchor is the lowest-ranked
+window. All detected episodes remain available, including incomplete records
+and cases contradicting an expected low soil or vegetation response.
+
+Rain-index return is confirmed in the second of two consecutive subsequent
+months with rank above 0.20. A soil or greenness low response requires an
+observed rank at most 0.20 during the episode or the next three months. Following
+the observed minimum, proxy return is confirmed independently by two consecutive
+monthly ranks at least 0.50. The signed delay compares these confirming months
+with the rain-index return; a negative value means the proxy returned earlier.
+A proxy return remains visible even when rainfall has no confirmed return.
+This comparison is not the delay after an individual rainfall event. A missing
+month that could hide an earlier return withholds the
+precise delay, even when a later pair of qualifying observations exists.
+
+Follow-up ends twelve months after the last dry window, at the end of the record,
+or just before the next detected dry episode, whichever comes first. Per-event
+metadata records that end and its reason. An incomplete or censored follow-up
+does not prove persistent stress. A proxy with no observed low response is
+labelled accordingly only if its whole predefined response window is observable;
+missing observations do not count as a counterexample. Classification is a
+navigation aid for this exploratory rule, not an independent statistical test.
+
+These definitions are product heuristics requiring scientific review. Rainfall
+and soil share MERRA-2 and do not constitute independent validation. NDVI covers
+a smaller area, describes greenness and has a composite-based monthly definition;
+its return does not establish recovery of ecological function, plant health or
+crop yield. Irrigation, harvesting, management, snow, long-term change and other
+influences can affect the sequence. Temporal ordering does not establish cause.
+
+The saved Prague case is rebuilt by `scripts/build_memory_example.py` from exact
+cached original provider responses. It includes all 300 monthly slots for
+2001–2025, with 123 accepted vegetation months and 177 explicit quality gaps.
+Original source URLs, retrieval dates, spatial support, units and quality counts
+are retained. No inference is strengthened by restricting display to a
+particularly dramatic episode. CSV exports include raw observations, ranks,
+reference counts, definitions and provenance. JSON exports include the complete
+input dataset, method version, all episodes and the selected episode.

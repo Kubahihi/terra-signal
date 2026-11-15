@@ -60,8 +60,8 @@ after manual exploration. The displayed reference rates are from the saved
 The complete analysis and NASA source URLs can be downloaded under the cards;
 live chart badges retain their four-test correction per point.
 
-The header has four primary destinations: **Map**, **Explore**, **Connections**
-and **Data**. Explore retains Place, Calendar, Days and Compare as secondary
+The header has five primary destinations: **Map**, **Explore**, **Connections**,
+**Memory** and **Data**. Explore retains Place, Calendar, Days and Compare as secondary
 views, including arbitrary-coordinate exploration and live retrieval. Location
 and period remain shared across those views. Switching destinations preserves
 loaded records, chart selections and map zoom; the Explore destination returns
@@ -177,6 +177,36 @@ locally. The parser checks product, collection, scaled values, coordinates and
 quality gaps; it retains the file SHA-256 and labels the origin as user supplied,
 not independently authenticated. The original text stays in browser memory to
 support period changes. ORNL export tools may require an Earthdata Login.
+
+## Landscape memory
+
+**Memory** reconstructs dry episodes instead of summarizing them with one
+correlation. A saved Prague investigation covers 2001–2025 and opens without
+another provider download. It preserves original NASA POWER rainfall and
+root-zone soil wetness, quality-filtered MOD13Q1 greenness, source requests and
+retrieval dates. Its 123 available NDVI months out of 300 remain explicit;
+cloud/snow/quality gaps are never filled from weather observations.
+
+Three synchronized tracks show the descriptive position of each observation
+among the same calendar month in other years. Rainfall uses complete three-month
+totals; soil and greenness use monthly observations. At least ten valid reference
+years are required. This available-observation reference excludes the target
+year and is separate from Calendar's 1991–2020 reference.
+
+Dry episodes require two consecutive rainfall-window ranks at or below 0.20.
+Returns require two consecutive observed months: rainfall rank above 0.20,
+or a previously low soil/greenness rank reaching at least 0.50. Follow-up stops
+after twelve months, at the record boundary or at the next episode. Missing
+observations can hide an earlier return, so a precise delay is withheld across
+gaps. Episode comparisons retain counterevidence and incomplete cases. This is
+an exploratory timing rule, not causal attribution or an ecosystem-health score.
+
+Users can explicitly load the selected map point, inspect calendar-month values
+and reference counts, and export CSV observations or a reproducible JSON evidence
+record. Loading another point uses the existing weather, soil and vegetation
+connections. `scripts/build_memory_example.py` rebuilds the saved case from
+original local response caches; `--download` permits filling missing caches.
+The full event definitions and limitations are in `docs/METHODOLOGY.md`.
 
 ## Project layout
 
