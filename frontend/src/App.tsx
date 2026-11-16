@@ -408,6 +408,6 @@ export default function App() {
         {workspace === 'methods' && <Suspense fallback={<p className="workspace-loading" role="status">Loading data and methods…</p>}><DataResources /></Suspense>}
       </section>
     </main>
-    <footer><span>TerraSignal</span><span>NASA Space Apps Challenge 2026</span><a href="https://power.larc.nasa.gov/" target="_blank" rel="noreferrer">Data from NASA POWER <Icon name="external" /></a></footer>
+    <footer><span>TerraSignal</span><span>NASA Space Apps Challenge 2026</span><a href="https://power.larc.nasa.gov/" target="_blank" rel="noreferrer">Data from NASA POWER <Icon name="external" /></a><a href="https://github.com/Kubahihi/terra-signal" target="_blank" rel="noreferrer">GitHub <Icon name="external" /></a></footer>
   </div>
 }
